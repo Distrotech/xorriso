@@ -1,0 +1,808 @@
+<HTML>
+
+<HEAD>
+<META NAME="description" CONTENT="GNU xorriso, creates, loads, manipulates and writes ISO 9660 filesystem images with Rock Ridge extensions">
+<META NAME="keywords" CONTENT="xorriso, libburn, libburnia, burn, CD, DVD, BD, ISO, ISO 9660, RockRidge, Rock Ridge, GNU/Linux, Linux, FreeBSD, Solaris, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R DL, BD-RE, BD-R, scdbackup">
+<META NAME="robots" CONTENT="follow">
+<TITLE>GNU xorriso - GNU Project - Free Software Foundation</TITLE>
+<LINK rev="made" href="mailto:webmasters@gnu.org">
+</HEAD>
+
+<BODY BGCOLOR="#F5DEB3" TEXT=#000000 LINK=#0000A0 VLINK=#800000 ALINK=#A000A0>
+<FONT SIZE=+1>
+
+<CENTER>
+<P>
+<H1>GNU xorriso</H1>
+
+<H2>ISO 9660 Rock Ridge Filesystem Manipulator<BR>
+for GNU/Linux, FreeBSD, Solaris</H2>
+</P>
+</CENTER>
+
+<P>
+<H2>Purpose:</H2>
+xorriso copies file objects from POSIX compliant filesystems
+into Rock Ridge enhanced ISO 9660 filesystems and allows
+session-wise manipulation of such filesystems. It can load the management
+information of existing ISO images and it writes the session results to
+optical media or to filesystem objects.
+<BR>
+Vice versa xorriso is able to copy file objects out of ISO 9660 filesystems.
+</P>
+<P>
+
+<HR>
+
+<A HREF="#download">Direct hop to download links -></A>
+
+<P>
+<H2>Hardware requirements:</H2>
+About any CD, DVD, or BD recorder produced in the recent ten years.
+<BR>
+<A HREF="http://libburnia-project.org">libburn</A>
+supports recorders which are compliant to standards MMC-1 for CD and
+MMC-5 for DVD or BD.
+<BR>
+GNU/Linux, FreeBSD, and Solaris allow to access drives connected
+via SCSI, PATA (aka IDE, ATA), USB, or SATA.
+<BR>
+xorriso also operates on ISO images in data files or block devices.
+Images or add-on sessions may be written to about any kind of file object.
+</P>
+
+<P>
+<H2>Software requirements :</H2>
+<DL>
+<DT>GNU/Linux with kernel 2.4 or higher, libc, libpthread :</DT>
+<DD>With kernel 2.4 a PATA/IDE drive has to be under ide-scsi emulation.</DD>
+<DD>With kernel 2.6 ide-scsi is not needed.</DD>
+<DT>or FreeBSD, libc, libpthread :</DT>
+<DD>PATA/IDE drives need atapicam running.</DD>
+<DD>SATA drives need atapicam running or need to be driven by ahci.</DD>
+<DD>libcam has to be installed.</DD>
+<DD>libiconv has to be installed.</DD>
+<DT>or Solaris, libc, libpthread :</DT>
+<DD>Tested on kernel 5.11, hopefully suitable for older ones too.</DD>
+<DT>or some other X/Open system, libc, libpthread :</DT>
+<DD>
+There will be no direct operation of optical drives, but only POSIX i/o
+with objects of the local filesystem.
+</DD>
+<DD>
+Might work with DVD-RAM, DVD+RW, BD-RE
+but rather not with CD, DVD-R, DVD+R, BD-R.
+</DD>
+</DL>
+
+<H3>Optional supporting software:</H2>
+<DL>
+<DT>libreadline and libreadline-dev</DT>
+<DD>make dialog more convenient.</DD>
+<DT>libacl and libacl-devel</DT>
+<DD>allow on GNU/Linux to get and set ACLs.</DD>
+<DT>zlib and zlib-devel</DT>
+<DD>allow zisofs, gzip compression, and Jigdo file production.</DD>
+<DT>libbz2 and libbz2-devel</DT>
+<DD>allow bzip2 compression of Jigdo template files.</DD>
+<DT>Tcl, Tk >= 8.4, Tcl/Tk package BWidget</DT>
+<DD>enable the operation of GUI frontend script <KBD>xorriso-tcltk</KBD>.</DD>
+</DL>
+</P>
+
+<P>
+This program has been tested on GNU/Linux, FreeBSD, and Solaris systems.<BR>
+For ports to other usable systems <A HREF="#contact">contact us</A>.
+</P>
+
+<HR>
+
+<P>
+<H2>Special features:</H2>
+<UL>
+<LI>
+ISO 9660 formatter and burner for CD, DVD, BD are fixely integrated.
+</LI>
+<LI>
+Operates on an existing ISO image or creates a new one.
+</LI>
+<LI>
+Copies files from filesystem into the ISO image and vice versa.
+</LI>
+<LI>
+Changes file properties, renames or deletes file objects in the ISO image.
+</LI>
+<LI>
+Updates ISO subtrees incrementally to match given disk subtrees.
+</LI>
+<LI>
+Can record and restore hard link relations, ACL, and xattr.
+</LI>
+<LI>
+Can attach MD5 checksums to each data file and the whole session.
+</LI>
+<LI>
+File content may get zisofs or gzip compressed or filtered by external
+processes.
+</LI>
+<LI>
+Can activate ISOLINUX and GRUB boot images by El Torito boot record and MBR.
+</LI>
+<LI>
+Writes result as completely new image or as add-on session
+to optical media or filesystem objects.
+</LI>
+<LI>
+Can perform multi-session tasks as emulation of mkisofs and cdrecord.
+</LI>
+<LI>
+Can issue commands to mount older sessions on GNU/Linux or FreeBSD.
+</LI>
+<LI>
+Can check media for damages and copy readable blocks to disk.
+</LI>
+<LI>
+Scans for optical drives, blanks re-useable optical media, formats media.
+</LI>
+<LI>
+Suitable for:
+CD-R, CD-RW, DVD-R, DVD-R DL, DVD-RW, DVD+R, DVD+R DL, DVD+RW, DVD-RAM,
+BD-R, BD-RE.
+</LI>
+<LI>
+Reads its instructions from command line arguments, dialog, and batch files.
+</LI>
+<LI>
+Provides navigation commands for interactive ISO image manipulation.
+</LI>
+
+</UL>
+</P>
+
+<P>
+Note that xorriso does not write audio CDs and that it does not
+produce UDF filesystems which are specified for official video DVD or BD.
+</P>
+
+<P>
+<H2>GUI Frontend:</H2>
+xorriso itself is entirely controlled by text commands. In dialog mode,
+xorriso reads them as text lines from standard input.
+Together with some helpful xorriso commands, it is quite easy for frontend
+programs to operate a separate xorriso process.
+<BR>
+Other than the usual batch programs, xorriso will take care of maintaining
+the emerging ISO image model. Its state can be inquired by the frontend
+at any time. The frontend is supposed to care for the display of the inquired
+xorriso state and to send xorriso commands to manipulate the ISO image model.
+<BR>
+As a proof of concept, there is a Tcl/Tk script which can
+be launched by shell command <KBD>xorriso-tcltk</KBD>
+<BR>
+Click on this image to see a screenshot:
+<BR>
+<A HREF="xorriso-tcltk-screen.gif">
+<IMG SRC="xorriso-tcltk-thumb.jpg" BORDER=1
+     ALT="To screenshot of frontend script xorriso-tcltk"></A>
+<BR>
+See also file
+<A HREF="http://svn.libburnia-project.org/libisoburn/trunk/frontend/README-tcltk">
+frontend/README-tcltk.
+</A>
+<BR>
+The script <KBD>xorriso-tcltk</KBD>
+is part of the tarball and gets installed by <KBD>make install</KBD>. If a
+xorriso distro package does not install it, you may get it directly from
+<A HREF="http://libburnia-project.org/export/head/libisoburn/trunk/frontend/xorriso-tcltk">
+libburnia SVN: frontend/xorriso-tcltk
+</A>
+You will probably have to give it x-permission after download. Some browsers
+insist in adding &quot;.htm&quot; to the file name.
+<BR>
+Further you need xorriso >= 1.3.0, Tcl, Tk >= 8.4,
+Tcl/Tk package &quot;BWidget&quot;.
+</P>
+
+<P>
+<H2>Command Examples:</H2>
+<DL>
+
+<DT>Get an overview of drives and their addresses</DT>
+<DD>#<KBD>&nbsp;xorriso -devices</KBD></DD>
+<DD><KBD>...</KBD></DD>
+<DD><KBD>0  -dev '/dev/sr0'  rwrw-- :  'TSSTcorp' 'CDDVDW SH-S203B'</KBD></DD>
+<DD><KBD>1  -dev '/dev/scd1' rwrw-- :  'PHILIPS ' 'SPD3300L'</KBD></DD>
+<DD><KBD>2  -dev '/dev/hda'  rwrw-- :  'HL-DT-ST' 'DVD-ROM GDR8162B'</KBD></DD>
+<DD><KBD>...</KBD></DD>
+<DT>Being superuser avoids permission problems with /dev/srN resp. /dev/hdX .
+</DT>
+<DT>
+Ordinary users should then get granted access to the /dev files
+as listed by option --devices. GNU/Linux and FreeBSD demand rw-permission.
+On Solaris it is r-permission and privileges "basic,sys_devices".
+</DT>
+<DT>&nbsp;</DT>
+
+<DT>Options are either performed as program arguments or as dialog input.
+Some options have a parameter list of variable length. This list has to
+be terminated by word '--' or by the end of the input line. Option -add
+may accept pathspecs of form target=source as known from program mkisofs.</DT>
+
+<HR>
+
+<DT>Get info about a particular drive and loaded media:</DT>
+<DD>$<KBD>&nbsp;xorriso -indev /dev/sr0 -du / -- -toc 2>&amp;1 | less</KBD></DD>
+
+<DT>Make re-usable media writable again, delete any ISO 9660 image,
+prepare yet unused BD-RE:</DT>
+<DD>$<KBD>&nbsp;xorriso -outdev /dev/sr0 -blank as_needed -eject all</KBD></DD>
+
+<DT>
+<HR>
+</DT>
+
+<DT>Write some directories into a new or existing ISO 9660 image:</DT> 
+<DD>$<KBD>&nbsp;xorriso -dev /dev/sr0 -add /home/me/sounds /home/me/pictures
+</KBD></DD>
+
+<DT>Have a look at the result:</DT>
+<DD>$<KBD>&nbsp;xorriso -indev /dev/sr0 -du / -- -toc 2>&amp;1 | less</KBD></DD>
+
+<DT>
+<HR>
+</DT>
+
+<DT>Create new ISO-9660 filesystem image, compose content,
+adjust permissions to make it publicly read-only,
+write it to media and immediately eject media without
+previously reloading the written image.
+</DT>
+<DD>$<KBD>&nbsp;cd /home/me</KBD></DD>
+<DD>$<KBD>&nbsp;xorriso -outdev /dev/sr0 -blank as_needed \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-map /home/me/sounds /sounds \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-map /home/me/pictures /pictures \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-rm_r /sounds/indecent '/pictures/*private*' -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-cd / \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-add pictures/private/horses* -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-chmod_r a+r,a-w / -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-find / -type d -exec chmod a+x -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-volid SOUNDS_PICS_2008_01_16 \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-commit_eject all</KBD></DD>
+<DT>
+<HR>
+</DT>
+
+<DT>Load the previous session from media,
+remove (i.e. hide) directory /sounds,
+rename /pictures/private/horses,
+add new directory trees /sounds and /movies,
+disallow any access for group and others.
+Finally write as additional session to media and eject:</DT>
+<DD>$<KBD>&nbsp;xorriso -dev /dev/sr0 \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-rm_r /sounds -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-mv /pictures/private/horses /horse_show -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-map /home/me/prepared_for_dvd/sounds_dummy /sounds \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-map /home/me/prepared_for_dvd/movies /movies \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-chmod_r go-rwx / -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-volid SOUNDS_PICS_2008_01_17 \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-commit_eject all</KBD></DD>
+<DT>
+<HR>
+</DT>
+
+<DT>Merge the various sessions from old readable media into a single session
+on new writeable media,
+cleaning out all invalidated files and session overhead.
+Touch / in order to mark the image as worth to be written.
+<BR>
+Important: -indev and -outdev have to be different drives.
+</DT>
+<DD>$<KBD>&nbsp;xorriso -indev /dev/dvd \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-alter_date a +0 / -- \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-outdev /dev/sr0 -blank fast \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;-commit_eject all</KBD></DD>
+
+<DT>
+<HR>
+</DT>
+
+<DT>Dialog mode accepts one or more options per line. An option and all its
+arguments have to be given in one single line. Backslash may be used to mark
+a line as incomplete so it gets continued by the next input line.
+<BR>
+Command -end stops the program run. It will write pending changes
+to media, if that has not already been done by a previous -commit.</DT>
+<DD>$<KBD>&nbsp;xorriso -dialog on</KBD></DD>
+<DD><KBD>enter option and arguments :</KBD></DD>
+<DD><KBD><B>-dev /dev/sr0</B></KBD></DD>
+<DD><KBD>enter option and arguments :</KBD></DD>
+<DD><KBD><B>-map /home/me/prepared_for_dvd/sounds_dummy /sounds</B></KBD></DD>
+<DD><KBD>enter option and arguments :</KBD></DD>
+<DD><KBD><B>-map /home/me/prepared_for_dvd/movies \</B></KBD></DD>
+<DD><KBD>Trailing backslash  : Enter rest of line (or @@@ to clear it) :
+</KBD></DD>
+<DD><KBD><B> /movies</B></KBD></DD>
+<DD>Available navigation commands: -cd, -ls, -du, -find</DD>
+<DD><KBD>enter option and arguments :</KBD></DD>
+<DD><KBD><B>-commit</B></KBD></DD>
+<DD>... perform further commands and finally do:</DD>
+<DD><KBD>enter option and arguments :</KBD></DD>
+<DD><KBD><B>-end</B></KBD></DD>
+
+<DT>
+<HR>
+</DT>
+
+<DT>The following command performs incremental backup.
+It can be run on blank media to create a copy of the mentioned disk
+directory trees, and it can be run on appendable media to perform a
+minimal set of change operations which update the old ISO copies
+to match the new disk trees.
+Older states can be retrieved by help of mount options like "sbsector="
+or by help of xorriso option -mount.
+<BR>
+Eventual ACL, xattr and hardlink relations will be recorded. MD5 checksums
+will be computed and recorded. Data comparison will be avoided by accelerator
+option -disk_dev_ino. After writing, the new session will be checked
+by its recorded MD5.
+<BR>
+Only blank media or media with volume id "PROJECTS_MAIL_..." will be accepted.
+Files with names ending by ".o" or ".swp" are excluded by options -not_leaf.
+</DT>
+<DD>$<KBD>&nbsp;xorriso -for_backup -disk_dev_ino on \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -assert_volid 'PROJECTS_MAIL_*' FATAL \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -dev /dev/sr0 \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -volid PROJECTS_MAIL_"$(date '+%Y_%m_%d_%H%M%S')" \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -not_leaf '*.o' -not_leaf '*.swp' \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -update_r /home/thomas/projects /projects \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -update_r /home/thomas/personal_mail /personal_mail \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -commit -toc -check_md5 FAILURE -- -eject all</KBD></DD>
+
+<DT>
+To apply zisofs compression to those data files which get newly copied from
+the local filesystem, perform immediately before -commit :
+<DD><KBD>&nbsp;&nbsp; -hardlinks perform_update \</KBD></DD>
+<DD>
+<KBD>&nbsp;&nbsp; -find / -type f -pending_data -exec set_filter --zisofs -- \</KBD></DD>
+</DD>
+</DT>
+
+<DT>
+<HR>
+</DT>
+
+<DT>
+Operating systems usually mount the most recent session on media.
+xorriso can issue the appropriate mount commands for older sessions.
+First get an overview of the sessions on the media:
+</DT>
+<DD>$<KBD>&nbsp;xorriso -outdev /dev/sr0 -toc</KBD></DD>
+<PRE>
+TOC layout   : Idx ,  sbsector ,       Size , Volume Id
+ISO session  :   1 ,         0 ,    104719s , PROJECTS_MAIL_2008_08_10_231435
+ISO session  :   2 ,    106928 ,      6785s , PROJECTS_MAIL_2008_08_14_184548
+...
+ISO session  :  76 ,    820384 ,     11035s , PROJECTS_MAIL_2009_01_04_191150
+</PRE>
+
+<DT>
+Then become superuser and let xorriso mount the session of August 14, 2008
+to directory /mnt:
+</DT>
+<DD>#<KBD>
+&nbsp;xorriso -osirrox on -mount /dev/sr0 volid '*_2008_08_14_*' /mnt
+</KBD></DD>
+<DT>
+To be later unmounted by: <KBD>umount /mnt</KBD>
+</DT>
+
+<DT>
+<HR>
+</DT>
+
+<DT>
+For creating bootable ISO images with GRUB2, use its script
+<KBD>grub-mkrescue</KBD> which knows how to operate xorriso.
+</DT>
+
+<DT>
+<HR>
+</DT>
+
+<DT>
+After the user has already created a suitable file tree on disk
+and copied the ISOLINUX files into subdirectory ./boot/isolinux of
+that tree, xorriso can burn an El Torito bootable media:
+</DT>
+<DD>$<KBD>&nbsp;xorriso -outdev /dev/sr0 -blank as_needed \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -map /home/me/ISOLINUX_prepared_tree / \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -boot_image isolinux dir=/boot/isolinux</KBD></DD>
+<DT>
+An MBR may be added if the file isolinux.bin is modern enough for "isohybrid"
+(syslinux version 3.72). It enables booting from hard disk or USB stick:
+</DT>
+<DD><KBD>&nbsp;&nbsp; -boot_image isolinux system_area=mbr/isohdpfx.bin \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -boot_image isolinux partition_table=on \</KBD></DD>
+<DT>
+<HR>
+</DT>
+
+<DT>ISO images may not only be stored on optical media but also in
+regular disk files or block devices for full multi-session operation.
+</DT>
+<DD>$<KBD>&nbsp;xorriso -dev /tmp/regular_file ...other.options...</DD>
+<DT>
+A default setting for safety reasons requires that files below /dev/
+need prefix &quot;stdio:&quot; if they do not lead to MMC burner devices.
+Be cautious not to overwrite your hard disk instead of your USB stick:
+</DT>
+<DD>$<KBD>&nbsp;xorriso -dev stdio:/dev/sdb ...other.options...</DD>
+
+<DT>Other file types are suitable only for writing but not for reading:</DT>
+<DD>$<KBD>&nbsp;xorriso -outdev /tmp/named_pipe ...other.options...</DD>
+
+<DT>In batch mode it is possible to operate xorriso in a pipeline
+with an external consumer of the generated ISO image. Any message
+output will be redirected to stderr in this case.
+Examples for consumers are cdrecord or growisofs on operating systems
+where xorriso cannot operate the burner drive directly,
+or a ssh pipe to another system which has the desired drive
+and a suitable burn program.</DT>
+<DD>$<KBD>&nbsp;xorriso -outdev - ...other.options... | consumer</KBD></DD>
+
+
+<DT>
+<HR>
+</DT>
+
+<DT>
+Let xorriso serve underneath growisofs via its alias name "xorrisofs"
+which enables mkisofs emulation:
+</DT>
+<DD>$<KBD>&nbsp;export MKISOFS="xorrisofs"</KBD></DD>
+<DD>$<KBD>&nbsp;growisofs -Z /dev/dvd /some/files</KBD></DD>
+<DD>$<KBD>&nbsp;growisofs -M /dev/dvd /more/files</KBD></DD>
+<DT>
+One may switch from mkisofs emulation to xorriso's own command mode:
+</DT>
+<DD>$<KBD>&nbsp;growisofs -M /dev/dvd -- outdev - -update_r /my/files /files
+</KBD></DD>
+
+<DT>
+<HR>
+</DT>
+
+<DT>If for any reason the reading operating system mishandles the ISO image
+or some files in it, one may enable reverse operation of xorriso and copy
+files or trees to disk:
+<DD>$<KBD>&nbsp;xorriso -acl on -xattr on \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -indev /dev/sr0 \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -osirrox on \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp; -cpx '/pictures/private/horses*/*buttercup*' \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /home/her/buttercup_dir -- \</KBD>
+<DD><KBD>&nbsp;&nbsp; -extract /sounds /home/her/sounds_from_me</KBD></DD>
+</DD>
+<DT>Each copy command processes its files sorted by block address
+in the ISO image in order to reduce head moves with optical media.
+This can bring effective read performance near to the raw media reading speed.
+</DT>
+<DT>Consider to enter dialog mode and use commands like
+<KBD>-cd , -du , -lsl , -find<KBD>.
+<DT>
+<HR>
+</DT>
+
+
+<DT>Get overview of the options:</DT>
+<DD>$<KBD>&nbsp;<A HREF="xorriso_help">xorriso -help</A></KBD></DD>
+
+<DT>Read the detailed manual page:</DT>
+<DD>$<KBD>&nbsp;<A HREF="man_1_xorriso.html">man xorriso</A></KBD></DD>
+</DL>
+
+</P>
+
+<HR>
+<A NAME="download"></A>
+<P>
+<DL>
+<DT><H3>Download as source code (see README):</H3></DT>
+<DD><A HREF="xorriso-1.3.0.tar.gz">xorriso-1.3.0.tar.gz</A>
+(2335 KB).
+</DD>
+<DD>(Released 17 May 2013)</DD>
+<DD><A HREF="xorriso-1.3.0.tar.gz.sig">xorriso-1.3.0.tar.gz.sig</A></DD>
+<DD>
+(detached GPG signature for verification by
+<KBD>gpg --verify xorriso-1.3.0.tar.gz.sig xorriso-1.3.0.tar.gz</KBD>
+<BR>
+after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
+</DD>
+<DD>
+Also on <A HREF="http://www.gnu.org/prep/ftp.html">
+mirrors of ftp://ftp.gnu.org/gnu/ </A>
+as xorriso/xorriso-1.3.0.tar.gz
+</DD>
+</DL>
+</DD>
+</DL>
+<DL><DT>Documentation:</DT>
+<DD><A HREF="README_xorriso">README</A> about installation and drive setup</DD>
+<DD><A HREF="xorriso_help">xorriso -help</A> gives an overview of options</DD>
+<DD><A HREF="xorrisofs_help">xorriso -as mkisofs -help</A>
+ supported options of mkisofs emulation
+</DD>
+<DD><A HREF="xorrecord_help">xorriso -as cdrecord -help</A>
+ supported options of cdrecord emulation</DD>
+<DD><A HREF="man_1_xorriso.html">man xorriso</A> is the manual page</DD>
+<DD><A HREF="man_1_xorrisofs.html">man xorrisofs</A>
+describes the mkisofs emulation</DD>
+<DD><A HREF="man_1_xorrecord.html">man xorrecord</A>
+describes the cdrecord emulation</DD>
+</DL>
+<A NAME="contact"></A>
+<DL><DT>Contact:</DT>
+<DD>GNU xorriso support mailing list,
+<A HREF="mailto:bug-xorriso@gnu.org">bug-xorriso@gnu.org</A></DD>
+<DD>libburnia development mailing list,
+<A HREF="mailto:libburn-hackers@pykix.org">libburn-hackers@pykix.org</A></DD>
+<DD>Thomas Schmitt, <A HREF="mailto:scdbackup@gmx.net">scdbackup@gmx.net</A></DD>
+</DL>
+<DL><DT>License:</DT>
+<DD><A HREF="COPYING_xorriso">GPL version 3 or later.</A>
+</DD>
+<DD>&nbsp;</DD>
+</DL>
+</P>
+
+<HR>
+
+<P>
+Bug fixes towards previous stable version xorriso-1.2.8:
+<UL>
+<LI>Disk paths with components '.' or '..' could be mistaken for directories.
+</LI>
+<LI>
+-as mkisofs -print-size failed with -isohybrid-mbr and a single boot image.
+</LI>
+<LI>
+-as mkisofs -path-list did not switch to --no-emul-toc by default.
+</LI>
+<LI>Reserved and unused fields of APM entries were not zeroed.</LI>
+<LI>
+Unspecified Expiration Time and Effective Time of ISO volume was
+represented by 0-bytes rather than ASCII '0' digits.
+</LI>
+<LI>
+GPT header CRC was computed from all 512 bytes rather than from 92.
+</LI>
+<LI>
+The protective MBR partition for GPT started at block 0 instead of 1.
+</LI>
+<!--
+<LI>- none -</LI>
+-->
+</UL>
+</P>
+
+<!--
+<P>
+Bug fixes in xorriso-1.1.0.pl01 towards xorriso-1.1.0:
+<UL>
+<LI>
+
+</LI>
+</UL>
+</P>
+-->
+
+<P>
+Enhancements towards previous stable version xorriso-1.2.8:
+<UL>
+<LI>New -boot_image bootspecs grub2_mbr= and grub2_boot_info=</LI>
+<LI>New -boot_image bootspec grub2_sparc_core=</LI>
+<LI>
+New -as mkisofs options --grub2-mbr , --grub2-boot-info , --grub2-sparc-core
+</LI>
+<LI>New -hardlinks mode "lsl_count" / "no_lsl_count"</LI>
+<!--
+<LI>- none -</LI>
+-->
+</UL>
+</P>
+
+<HR>
+
+<P>
+<H3>
+Software copies included in GNU xorriso:
+</H3>
+<DL>
+<DT>
+GNU xorriso is feature-wise equivalent to the dynamic compilation of
+<A HREF="http://libburnia-project.org/"> libburnia </A>
+libraries, libjte, and libburnia program xorriso.
+It restricts itself to a technical form where the legal commitments of the
+libburnia project and the legal intentions of
+<A HREF="http://www.fsf.org/"> FSF </A> match completely.
+</DT>
+<DD>&nbsp;</DD>
+<DT>libburn-1.3.0</DT>
+<DD>reads and writes data from and to CD, DVD, BD.</DD>
+<DD>(founded by Derek Foreman and Ben Jansens,
+developed and maintained since August 2006 by
+Thomas Schmitt from team of libburnia-project.org)</DD>
+<DT>libisofs-1.3.0</DT>
+<DD>operates on ISO 9660 filesystem images.</DD>
+<DD>(By Vreixo Formoso, Mario Danic and Thomas Schmitt
+from team of libburnia-project.org. HFS+ code by Vladimir Serbinenko.)</DD>
+<DT>libisoburn-1.3.0</DT>
+<DD>coordinates libburn and libisofs, emulates multi-session where needed,
+and hosts the original source code of program xorriso.</DD>
+<DD>It provides the complete functionality of xorriso via
+a C language API.</DD>
+<DD>(By Vreixo Formoso and Thomas Schmitt
+from team of libburnia-project.org)</DD>
+<DT>libjte-1.0.0</DT>
+<DD>produces jigdo and template file together with the emerging ISO image.</DD>
+<DD>(By Free Software Foundation, Steve McIntyre, George Danchev,
+Thomas Schmitt)</DD>
+<DD>&nbsp;</DD>
+<DT>The source code of this software is independent of 
+cdrecord and mkisofs.</DT>
+</DL>
+</P>
+
+<HR>
+
+<P>
+<DL>
+<DT><H3>Development snapshot, version 1.3.1 :</H3></DT>
+<DD>Bug fixes towards xorriso-1.3.0:
+<UL>
+<LI>- none yet -</LI>
+<!-- 
+<LI>- none yet -</LI>
+ -->
+</UL>
+</DD>
+<DD>Enhancements towards stable version 1.3.0:
+<UL>
+<LI>- none yet -</LI>
+<!-- 
+<LI>- none yet -</LI>
+ -->
+</UL>
+
+</DD>
+
+
+<DD>&nbsp;</DD>
+<DD><A HREF="README_xorriso_devel">README 1.3.1</A>
+<DD><A HREF="xorriso_help_devel">xorriso-1.3.1 -help</A></DD>
+<DD><A HREF="xorrisofs_help_devel">xorriso-1.3.1 -as mkisofs -help</A></DD>
+<DD><A HREF="xorrecord_help_devel">xorriso-1.3.1 -as cdrecord -help</A></DD>
+<DD><A HREF="man_1_xorriso_devel.html">man xorriso (as of 1.3.1)</A></DD>
+<DD><A HREF="man_1_xorrisofs_devel.html">man xorrisofs (as of 1.3.1)</A></DD>
+<DD><A HREF="man_1_xorrecord_devel.html">man xorrecord (as of 1.3.1)</A></DD>
+<DD>&nbsp;</DD>
+<DT>If you want to distribute development versions of xorriso, then use
+this tarball which produces static linking between xorriso and the
+libburnia libraries.
+</DT>
+<DD>Source (./bootstrap is already applied, build tested,
+installation see README)
+</DD>
+<DD>
+<A HREF="xorriso-1.3.1.tar.gz">xorriso-1.3.1.tar.gz</A>
+(2335 KB).
+</DD>
+<DT>A dynamically linked development version of xorriso can be obtained
+from repositories of
+<A HREF="http://libburnia-project.org"> libburnia-project.org</A>.
+xorriso is part of libisoburn/trunk and will get built by its "make".
+</DT>
+
+<DT>Be warned that the libraries in SVN and bzr are development versions with
+possibly unstable API/ABI enhancements. Do not distribute development
+versions for dynamic linking. Only release versions are safe for that.
+</DT>
+<DD>Download: <KBD><B>svn co http://svn.libburnia-project.org/libburn/trunk libburn</B>
+</KBD></DD>
+<DD>Install: <KBD><B>cd libburn ; ./bootstrap ; ./configure --prefix /usr ; make ; make install</B>
+</KBD></DD>
+<DD>Download:
+<KBD><B>bzr branch lp:~libburnia-team/libisofs/scdbackup</B></KBD>
+</DD>
+<DD>Install: <KBD><B>cd libisofs ; ./bootstrap ; ./configure --prefix /usr ; make ; make install</B>
+</KBD></DD>
+<DD>Download: <KBD><B>svn co http://svn.libburnia-project.org/libisoburn/trunk libisoburn</B>
+</KBD></DD>
+<DD>Install: <KBD><B>cd libisoburn ; ./bootstrap ; ./configure --prefix /usr ; make ; make install</B>
+</KBD></DD>
+<DT>Build of SVN versions needs of at least version 1.7 installed.
+But after the run of <KBD>./bootstrap</KBD>, only
+vanilla tools like make and gcc are needed.
+</DT>
+<DT>GNU xorriso contains a copy of libjte-1.0.0 from package jigit
+which produces jigdo and template file together with the emerging ISO image.
+(By Free Software Foundation, Steve McIntyre, George Danchev,
+Thomas Schmitt)
+</DT>
+<DD>Important: If desired, libjte has to be already installed when libisofs
+and libisoburn get built.</DD>
+<DD>Download: <KBD><B>wget http://www.einval.com/~steve/software/JTE/download/jigit_1.17.orig.tar.gz</B>
+</KBD></DD>
+<DD>Install: <KBD><B>tar xzf jigit_1.17.orig.tar.gz ; cd jigit-1.17 ; make ; make install</B>
+</KBD></DD>
+
+<DD>&nbsp;</DD>
+</DL>
+</P>
+
+<HR>
+
+<P>
+Many thanks to Derek Foreman and Ben Jansens for starting libburn.
+<BR>
+Very special thanks to Andy Polyakov whose 
+<A HREF="http://fy.chalmers.se/~appro/linux/DVD+RW/tools">dvd+rw-tools</A>
+provide the libburnia project with invaluable examples on how to deal
+with DVD media and how to emulate multi-session on overwriteable media.
+</P>
+<HR>
+
+<!-- The following links might lead to sites which do not comply
+     to the strict rules of FSF about non-free software.
+     GNU xorriso does not endorse or recommend any non-free software
+     which can be reached by them directly or indirectly. Nevertheless
+     outside of official GNU sites, GNU xorriso thanks the following
+     entities for their long standing support.
+-->
+<!-- Start not-www.gnu.org -->
+
+<P>
+<CENTER><FONT SIZE=+0>
+<FONT SIZE=+0>
+<A HREF="http://www.gnu.org">Dedicated to the GNU Operating System</A><BR>
+
+Enjoying free hosting by<BR>
+<A HREF="http://www.webframe.org">www.webframe.org</A><BR>
+<A HREF="http://sourceforge.net">sourceforge.net</A><BR>
+
+</FONT></CENTER>
+</P>
+
+<HR>
+<DL>
+<DT>Links to related free software projects of Thomas Schmitt:</DT>
+<DD><A HREF=http://scdbackup.webframe.org/cdrskin_eng.html>
+cdrskin, a cdrecord emulator</A></DD>
+<DD><A HREF=http://scdbackup.webframe.org/main_eng.html>
+scdbackup, multi volume CD/DVD/BD backup</A></DD>
+<DL><DD><A HREF=http://scdbackup.sourceforge.net/main_eng.html> 
+(a second source of above)</A></DD></DL>
+</DL>
+
+<!-- End not-www.gnu.org -->
+
+<BR>
+Legal statement: This website does not serve any commercial purpose.
+<BR><BR>
+Copyright &copy; 2008 - 2013 Thomas Schmitt.
+<BR>
+This text is freely distributable. It shall only be modified in sync with
+the factual properties of xorriso and its public storage locations.
+If you make use of the license to derive modified versions of xorriso
+then you are entitled to modify this text under that same license.
+<DL>
+<DT>Contact for issues of this web page or the described program:</DT>
+<DD>Thomas Schmitt, <A HREF="mailto:scdbackup@gmx.net">scdbackup@gmx.net</A></DD>
+<DD>GNU xorriso support mailing list,
+<A HREF="mailto:bug-xorriso@gnu.org">bug-xorriso@gnu.org</A></DD>
+<DD>libburnia development mailing list,
+<A HREF="mailto:libburn-hackers@pykix.org">libburn-hackers@pykix.org</A></DD>
+</DL>
+</FONT>
+</BODY>
+</HTML>

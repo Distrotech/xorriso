@@ -1,0 +1,297 @@
+------------------------------------------------------------------------------
+                         http:libburnia-project.org
+------------------------------------------------------------------------------
+libisoburn/releng. By George Danchev <danchev@spnet.net>
+                  and Thomas Schmitt <scdbackup@gmx.net>
+
+Test suite for xorriso and libburnia libraries.
+Copyright (C) 2011 - 2012 George Danchev, Thomas Schmitt
+Provided under GPL version 2 or later.
+------------------------------------------------------------------------------
+
+The impatient tester will build libisoburn according to its README and then do
+
+  cd ./releng
+  ./run_all_auto -x ../xorriso/xorriso
+
+More patient testers will first read the following description.
+
+Those who simply lack the interpreter /bin/bash, may do
+  ./change_shell_to_use
+and then retry.
+
+
+                            The test suite
+
+Directory ./releng of libisoburn contains a collection of test scripts and
+auxiliary data. They exercise some typical use cases of building libisoburn
+applications and running the ISO 9660 filesystem manipulation and CD/DVD/BD
+burn program xorriso. 
+
+It is assumed that libburn and libisofs are installed, so that libisoburn
+can be configured and built. It is not mandatory that libisoburn is already
+installed. The tests may use an installed xorriso program as well as a
+freshly built one.
+
+The test scripts explicitely demand /bin/bash as interpreter, although they
+would run on certain other shells too. If you get an error message like
+  ./run_all_auto: not found
+then consider to install /bin/bash.
+If you decide against that, see below "Alternative Shells".
+
+
+There are two groups of test scripts:
+
+  auto_*    gets started and watched by script run_all_auto.
+            These tests have a moderate resource consumption and do
+            not cause mechanical movements of drive trays.
+
+  manual_*  gets started by the user if desired.
+            Manual tests may create larger sets of temporary files,
+            may download test data from the internet, may need
+            system privileges beyond the reach of a sandbox user,
+            and operate the mechanics of a CD drive.
+
+
+                       Running automated tests
+
+The test scripts expect to get run while the working directory is
+  ./releng
+of a libisoburn source tree. E.g.: libisoburn-1.1.4/releng
+They create all their temporary files underneath
+  ./releng/releng_generated_data 
+Some of these files are persistent between tests.
+Nevertheless it is safe to empty ./releng/releng_generated_data after
+tests are done. The directory itself must be kept.
+
+To run the unobtrusive automatic tests, build libisoburn and xorriso,
+go to directory ./releng, and execute
+
+  ./run_all_auto -x ../xorriso/xorriso
+
+or if you want to use an installed xorriso program:
+
+  ./run_all_auto -x $(which xorriso)
+resp.
+  ./run_all_auto -x $(type -p xorriso)
+
+There are several options which work with run_all_auto and any single test.
+  -x  absolute or relative path to xorriso binary to be run.
+  -k  keep self-generated data.
+  -c  cleanup temporary data kept from previous run and exit.
+  -f  simulate failure.
+  -h  print this help text.
+  --  end of general options, begin of test specific options.
+After option "--", there may be given options which are specific to
+particular manually executable test scripts. 
+
+
+                        Manually executable tests
+                 
+Currently there are the following tests which should have the attention of
+the user or require sysadmin considerations before they are run:
+
+./manual_devices -x ../xorriso/xorriso [-- [--dev device_file_to_use]
+                                        [--priv_cmd 'command [arg [arg ...]]']]
+  Exercises listing of all accessible optical drives and the examination of
+  a one of these drives. The user needs the permission to operate the CD
+  drives. This might involve the need for superuser authority.
+  The media tray of the examined drive will get loaded if it is not already.
+  If no option --dev is given, then the user gets asked which of the listed
+  drives to examine more closely.
+  If a privilege command and optional arguments are given with --priv_cmd,
+  then this command and arguments are used to launch the xorriso runs.
+  Command and arguments must be single words and be submitted altogether
+  as one single argument. On Solaris use: --priv_cmd pfexec
+
+./manual_burn -x ../xorriso/xorriso [-- [--dev device_file_to_use]
+                                        [--priv_cmd 'command [arg [arg ...]]']
+                                        [--what ...directory...] [--any_media]]
+  Burns the content of the directory given with --what onto re-usable
+  media: CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE.
+  Other media types get refused, unless option --any_media is given.
+  Data, which are possibly present on the media, get overwritten.
+  The result gets check read and compared with the state of the input
+  directory. MD5 mismatch causes a test failure. Differences to the directory
+  state are reported but still regarded as success.
+  If a privilege command and optional arguments are given with --priv_cmd,
+  then this command and arguments are used to launch the xorriso runs.
+  Command and arguments must be single words and be submitted altogether
+  as one single argument. On Solaris use:
+    --priv_cmd pfexec
+
+./manual_isojigdo -x ../xorriso/xorriso
+  Exercises the production of a bootable Debian GNU/Linux image and its Jigdo
+  files. This test downloads a Debian daily image for i386 of about 270 MB,
+  extracts its content and composes a new image. Thus it needs about 850 MB
+  of disk space in releng/releng_generated_data when unpacked. Adding the daily
+  image size itself, the total space used would peak at about 1.2 GB.
+  This test will only work with GNU xorriso or if libjte was installed already
+  when libisofs was built. Further it needs the program jigit-mkimage. Both
+  are part of package jigit, version >= 1.18, available at:
+    http://www.einval.com/~steve/software/JTE/
+  Currently jigit builds only in GNU environments.
+
+
+Any auto_* script can be run on its own. Some of them demand option -x.
+All general options are accepted.
+
+./auto_cxx
+  Not included in GNU xorriso.
+  Exercises inclusion of xorriso/xorriso.h and libisoburn/libisoburn.h
+  in C++ programs and linking of the libraries. It might be necessary
+  to set compiler options by shell variable CFLAGS before running the test.
+  It might be necessary to hand over the install directory of libburn and
+  libisofs in shell variable LD_LIBRARY_PATH.
+  E.g. if on FreeBSD the include headers libisofs.h , libburn.h are not found:
+    export CFLAGS="-I/usr/local/include"
+  E.g. on GNU/Hurd, where libburn and libisofs are not found by the linker:
+    export LD_LIBRARY_PATH="/usr/local/lib"
+
+./auto_isocontent -x ../xorriso/xorriso
+  Tests whether xorriso is able to record and restore two familes of
+  hard links.
+
+./auto_printsize -x ../xorriso/xorriso
+  Tests how long xorriso needs to compose a medium sized directory tree.
+  If programs mkisofs and/or genisomage are availaible, then the same test
+  is done with them.
+
+
+----------------------------------------------------------------------------
+
+                       What to do with FAIL results
+
+The text output of the automatic tests is recorded in file
+   releng_generated_data/log.run_all_auto
+
+Script ./run_all_auto will detect failure of particular tests and report
+lines from the log file which contain problem indicating keywords:
+  NEVER,ABORT,FATAL,FAILURE,MISHAP,SORRY,WARNING,HINT,FAIL,ERROR,WRONG
+
+If the program messages in log.run_all_auto do not explain the failure,
+please contact mailing list libburn-hackers@pykix.org .
+
+
+----------------------------------------------------------------------------
+
+                          Alternative Shells
+
+If you decided against installing /bin/bash, you may try to use your
+current $SHELL by running
+  ./change_shell_to_use
+which will modify the test scripts named run_all_auto , auto_* ,manual_*.
+
+Known to be suitable are the following shells
+  GNU/Linux: /bin/bash
+  FreeBSD 8: /bin/sh
+  Solaris:   /bin/bash , /bin/i86/ksh93
+In general, the shell should have Bourne shell ancestry.
+
+The script does not choose an interpreter explicitely and is safe to be run
+inline:
+  . ./change_shell_to_use
+One may set any interpreter path by running a sub shell and changing its
+variable SHELL. E.g. by:
+  ( SHELL=/bin/my_shell" ; . ./change_shell_to_use )
+
+
+----------------------------------------------------------------------------
+
+                          Creating a new test script
+
+If you want to provide an own test, manual or auto, then first invent a name
+for it
+  test_name="releng/manual_"...some.name...
+or
+  test_name="releng/auto_"...some.name...
+Then copy file releng/template_new to $test_name.
+Edit $test_name and process any line that begins by "# === TEMPLATE:".
+Do what the line prescribes and then remove it from the script. You are
+not done as long as such a line remains.
+
+Your test must not start if no file
+   ./inc/releng_getopts.inc
+exists, i.e. if the current working directory is not ./releng.
+If your test creates own files on disk, then it must do this underneath
+directory
+   ./releng_generated_data/$test_name (resp. $GEN_DATA_DIR, see below).
+
+In case of failure, issue a line to stdout that begins by the word "FAIL",
+followed by " : " and the name of the test (e.g. $SELF, see below).
+Make sure that the test script finally returns a non-zero exit value.
+This value should be between 1 and 28. Each type of failure should have its
+own exit value.
+Predefined are:
+  31 = Unknown option or unusable argument with known option
+  30 = Unexpected state of own directory for self generated files
+  29 = Not in ./releng directory or missing essential parts of ./releng
+
+When exiting prematurely, make sure to call function cleanup.
+
+
+               Variables, general options, helper functions
+
+The master script run_all_auto sets this variable:
+
+  RELENG_SCRIPT_RUN_BY_RUN_ALL_AUTO
+                    1=supervised, the script is run by run_all_auto script
+                    else=standalone, the script is run in standalone mode 
+
+The code piece inc/releng_getopts.inc should get executed inline at the
+start of a test script. It initializes the following variables and sets
+some of them according to the general options of the test suite:
+
+  SELF              basename $0
+
+  GEN_DATA_DIR      releng_generated_data/${SELF}
+
+  RELENG_XORRISO    Path to xorriso binary. "" or "0" means no xorriso.
+                    Default "0". Adjustable by option -x.
+
+  SIMULATE_FAILURE  0=normal operation, 1=test script shall simulate a failure.
+                    Default 0. Setable to 1 by option -f.
+
+  CLEANUP           0=do not cleanup temporary data, 1=normal operation
+                    Default 1. Setable to 0 by option -k.
+
+  SPECIFIC_HELP     0=normal operation, 1=print help text of script and exit 0
+                    Default 0. Setable to 1 by option -h.
+
+The code piece inc/releng_getopts.inc defines the following functions
+for use by the single tests:
+
+  standalone_or_supervised This is internally called routine to print out
+                           the running mode of the scripts - standalone,
+                           supervised by run_all_auto.
+			   No need to call it from the scripts themselves.
+
+  print_help        Prints the help text for general options.
+
+  check_for_xorriso [-x]
+                    Will exit with value 31 if no path to a xorriso binary
+                    was defined by option -x of ./run_all_auto or a single
+                    test.
+                    Option -x of check_for_xorriso additionally tests whether
+                    the given path leads to an executable program.
+
+  cleanup           Removes the directory tree GEN_DATA_DIR after making
+                    some safety checks.
+
+  boldify           Try to set the terminal mode for future output to a more
+                    noticable style of writing.
+  unboldify         Reset terminal mode to normal style of writing.
+
+
+                             Specific options
+
+Options which are specific to the test should begin with a double dash.
+They may have further arguments.
+Implement them in the prepared interpreter loop which begins after line
+  next_is=ignore
+
+Specific options shall only be interpreted by tests which get run manually.
+If you plan to introduce a specific option, look at the description of
+existing tests whether one of them would match your needs. In that case,
+please re-use the name of that existing option.
+

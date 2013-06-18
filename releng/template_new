@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Copyright 2011 Thomas Schmitt <scdbackup@gmx.net>
+# === TEMPLATE: Add your own copyright here
+#
+# Licensed under GNU GPL version 2 or later
+
+# === TEMPLATE: Remove this remark before releasing this script.
+#
+# This is a template for creating a new libisoburn/releng test.
+# It is supposed that you have read releng/README before you begin to work
+# here.
+#
+# Step 1: Invent a name for your test
+#           test_name="manual_"...some.name...
+#         or
+#           test_name="auto_"...some.name...
+#
+# Step 2: Copy releng/template_new to $test_name
+# 
+# Step 3: Edit $test_name and process any line that begins by
+#         "# === TEMPLATE:". Do what the line prescribes and then remove it
+#         from the script. You are not done as long as such a line remains.
+#
+# === TEMPLATE: End of remark to remove
+
+set -e
+
+
+# === TEMPLATE: Describe your own specific options (if any) and the test
+print_specific_help() {
+cat << HLP
+Specific options:
+       --option  Explanation of specific option
+Overview:
+       Short explanation of test purpose and activities.
+HLP
+} 
+
+
+getopts_inc=inc/releng_getopts.inc
+if test -e "$getopts_inc"
+then
+  . "$getopts_inc"
+  
+  if test "$SPECIFIC_HELP" = 1
+  then
+       print_specific_help
+       exit 0
+  fi
+else
+  echo >&2
+  echo "File not found: $getopts_inc" >&2
+  echo "Are we in the ./releng directory of a libisoburn SVN checkout ?" >&2
+  echo "(Please execute the tests from that ./releng directory.)" >&2
+  echo >&2
+  exit 29  
+fi
+
+
+# === TEMPLATE: Decide whether the test will have own options,
+# === TEMPLATE: apart from those interpreted by inc/releng_getopts.inc
+# === TEMPLATE: If not, then remove this interpreter code.
+# Set default values for specific option variables. E.g.:
+# dev=
+# Interpret specific options, they begin after the first --.
+next_is=ignore
+for i in "$@"
+do
+  if test "$next_is" = "ignore"
+  then
+       if test "$i" = "--"
+       then
+            next_is=""
+       fi
+
+# === TEMPLATE: Implement interpretation of specific options. Like:
+#  elif test "$next_is" = "dev"
+#  then
+#       dev="$i"
+#       next_is=""
+#  elif test "$i" = "--dev"
+#  then
+#       next_is="dev"
+
+  else
+       echo >&2
+       echo "Unknown test specific option: $i" >&2
+       print_help
+       print_specific_help
+       exit 31
+  fi
+done
+# === TEMPLATE: End of own option interpreter code. 
+
+
+# Each test should decide whether or not it needs
+# a xorriso binary to test, since some do compilations only.
+# === TEMPLATE: Decide whether you need a xorriso program.
+# === TEMPLATE: If not, then remove this function call
+check_for_xorriso -x
+
+
+# check data dir, if any and after checking -x xorriso
+# === TEMPLATE: Decide whether your test will possibly create own files.
+# === TEMPLATE: If yes, then create your files underneath ${GEN_DATA_DIR}.
+# === TEMPLATE: The name in this variable is set by inc/releng_getopts.inc .
+# === TEMPLATE: If not, then remove this if ... fi statement.
+if [ -d "${GEN_DATA_DIR}" ]; then
+ printf "\n${SELF}: directory %s exists!" ${GEN_DATA_DIR}
+ printf "\n${SELF}: use '${SELF} -c' to remove.\n"
+ exit 30
+else
+ mkdir "${GEN_DATA_DIR}"
+fi
+
+
+#####################################################################
+
+
+# === TEMPLATE: Perform your test activities here.
+
+
+# === TEMPLATE: In case of failure, issue a line to stdout that begins by
+# === TEMPLATE: the word "FAIL", and make sure that the test script finally
+# === TEMPLATE: returns a non-zero exit value.
+# === TEMPLATE: 31 = Unknown option or unusable argument with known option
+# === TEMPLATE: 30 = Unexpected state of own directory for self generated files
+# === TEMPLATE: 29 = Not in ./releng directory or missing essential parts
+# === TEMPLATE: 1 to 28 = test specific exit values
+# === TEMPLATE: When exiting prematurely, make sure to call cleanup.
+
+cleanup
+exit 0

@@ -1,0 +1,175 @@
+#!/bin/sh
+
+# Copyright (c) 2010, 2011 George Danchev <danchev@spnet.net>
+# Copyright (c) 2010, 2011 Thomas Schmitt <scdbackup@gmx.net>
+# This script is distributed according to the terms of the GNU GPL v2.
+# This should be better rewritten in C at some future point. Ref: pwd code.
+
+# Create a list of MD5sums encoded in hexidecimal format and print to standard output
+
+# Format Description
+# A line in the emerging file is to be composed as follows:
+#
+# The MD5 checksum of the file content must be encoded in 32 hex digits
+# [0-9afAF]
+#
+# Next come two blanks.
+#
+# The byte size of the file content must be encoded in 12 decimal digits
+# or blanks.
+#
+# Next come two blanks.
+#
+# The rest of the line up to the newline character is a semi-literal file
+# address. Its basename has to be the same as the basename of the data file
+# when it is used as one of the input files for the jigdo file generator.
+
+# The semi-literal address and the address mapping define what will be
+# listed as file address in the jigdo file.
+# The address may bear at its start a literal text that shall be recognized by
+# the address mapping (e.g. -jigdo-map) of the jigdo file generator.
+# The rest of the address must be usable as file address in both situations:
+# When the jigdo file gets generated, and when the jigdo file gets read
+# to inflate the template file into the original payload image.
+# The address mappings at both occasions can be used to adapt to a change
+# of the absolute location of the listed files.
+# Between both mappings, the parent directory is represented by a symbolic
+# text, like "Debian:".
+
+# A simple strategy to cope with this is to write absolute paths into the
+# .md5 file, and to use matching absolute paths in the -jigdo-map
+# directives. Keep in mind that mapping is purely literal. Symbolic links
+# are neither resolved nor can they confuse the mapping.
+
+set -e
+
+SELF=jigdo-gen-md5-list
+VER=0.2
+
+OPT_ABSOLUTE=1
+
+# On FreeBSD there is "md5" rather than "md5sum".
+# Furthermore, the FreeBSD shell reports missing commands to inherited stderr,
+# regardless that the attempt itself has redirected stderr. Thus a sub shell
+# is needed to hide the protest.
+if ( md5sum --help ) >/dev/null 2>&1 
+then
+	md5_cmd=md5sum
+elif ( md5 -s test ) >/dev/null 2>&1
+then
+	md5_cmd=md5
+else
+	echo "$0 : Programs md5sum and md5 failed to work" >&2
+	exit 2
+fi
+
+usage() {
+	cat << USAGE
+usage: $SELF [option] DIR FILE ...
+ -a, --make-absolute    make absolute paths, avoiding any symlinks (default)
+ -l, --keep-literal     leave paths untouched, literally as supplied
+ -v, --version          print version
+ -h, --help             print help
+ -e, --examples         print examples
+USAGE
+}
+
+examples() {
+	cat << EXAMPLES
+examples:
+ $SELF datadir datafile
+ $SELF --keep-literal datadir datafile
+ find . -type f | xargs $SELF
+ find . -exec $SELF '{}' ';'
+EXAMPLES
+}
+
+md5list() {
+	item="$1"
+	if test $OPT_ABSOLUTE -eq 1; then
+        	dn=`dirname "$item"`  # dirname
+		fn=`basename "$item"` # filename
+		od=`pwd -P`           # old dir
+		cd "$dn" || exit 1
+		item=`pwd -P`/"$fn"   # absolute physical file path, avoiding all symlinks
+		cd "$od" || exit 1
+	fi
+	if test "$md5_cmd" = "md5sum"
+	then
+		MD5=`md5sum "$item" | awk '{print $1}'`
+	elif test "$md5_cmd" = "md5"
+	then
+		MD5=`md5 -q "$item"`
+	else
+		echo "$0 : No MD5 program found" >&2
+		exit 2
+	fi
+	SIZ=`ls -ld "$item" | awk '{print $5}'`
+	printf '%32s  %12s  %s\n' "$MD5" "$SIZ" "$item"
+}
+
+walkdir() {
+	DR="$1"
+	for item in `find "$DR" -type f`
+	do
+		md5list "$item"
+	done
+}
+
+
+# main()
+if test "$1" = "" ; then
+	usage
+	exit 1
+fi
+
+case "$1" in
+	--make-absolute|-a)
+		OPT_ABSOLUTE=1;
+		shift;
+		;;
+	--keep-literal|-l)
+		OPT_ABSOLUTE=0;
+		shift;
+		;;
+	--version|-v)
+		printf '%s %s\n' "$SELF" "$VER"
+		exit 0
+		;;
+	--help|-h)
+		usage
+		exit 0
+		;;
+	--examples|-e)
+		examples
+		exit 0
+#	*)
+#		usage
+#		exit 1
+#		;;
+esac
+
+for i in "$@"
+do
+
+	if test -d "$i" ; then
+		DR="$i"
+                if test $OPT_ABSOLUTE -eq 1; then
+			od=`pwd -P`           # old dir
+			cd "$DR" || exit 1
+			DR=`pwd -P`           # absolute physical dir path, avoiding all symlinks
+			cd "$od" || exit 1
+		fi
+		walkdir "$DR"
+	elif test -f "$i" ; then
+		FL="$i"
+		md5list "$FL"
+	else
+		usage
+		exit 1
+	fi;
+
+done
+
+exit 0
+

@@ -1,0 +1,42 @@
+
+* Manpage examples turned into tests
+  Convert most examples from xorriso(1) manpage into tests.
+
+* Enhance 'auto_isocontent'
+  Extend it to use some more demanding directory tree.
+  MD5s should be checked.
+  All file types as of stat(2) should be tested.
+  Test various comparisons:
+  xorriso provides built-in means for comparison: 
+  xorriso -compare_r disk_path iso_rr_path
+  xorriso -indev my.iso -find /   vs. find input_dir
+  bsdtar -xf my.iso               vs. input_dir
+
+* Test for wrong CD sizes would need a new test and probably an
+  automatic CD changer.
+
+* Library unit tests - investigate the possibility to write some
+  cunit-based tests (http://cunit.sourceforge.net) for both
+  xorriso.h and libisoburn.h API's. The code samples could be put into
+  codesamples/ directory and run by auto_cxx or a separate auto_ script.
+
+* ??? Still to decide:
+  Delete debian-testing-i386-businesscard.iso with ./run_all_auto -c
+  Contra: Currently remaining large files (like downloaded ISO images) are
+  simply left behind to be re-used and a boldified info message is shown
+  so the users can decide for themselves what to remove or leave as well.
+  Pro: Leaving 70 MB of image is quite obtrusive. Option -c is not run
+  under normal circumstances. So it could well be used for total cleanup.
+  Alternative: Specific option --remove_image.
+
+* ??? Still to decide:
+  Have a script ./run_all_manual
+  Contra argument: if a releng sctipt is suitable to be run under a master
+  script run_all*, then this releng script should be put into auto_*
+  namespace , otherwise it is manual_*.
+  Pro: Tests may be manual because they demand lots of resources, not
+  because they need manual attention. In general the run_all_manual script
+  shall spare the user the plight to read the documentation. Instead it
+  shall present the manual tests, give an opportunity to skip the test,
+  and ask for parameters,
+

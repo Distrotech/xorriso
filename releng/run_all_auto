@@ -1,0 +1,254 @@
+#!/bin/bash
+
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Copyright 2011 Thomas Schmitt <scdbackup@gmx.net>
+# Licensed under GNU GPL version 2 or later
+
+set -e
+
+export RELENG_SCRIPT_RUN_BY_RUN_ALL_AUTO=1
+
+SELF=$(basename "$0")
+GEN_DATA_DIR=releng_generated_data
+CLOG=${GEN_DATA_DIR}/log.${SELF}
+CLOG_PREV=${CLOG}.prev
+PASSED_OPTIONS="$@"
+RELENG_XORRISO=
+CLEANUP_LOG=0
+
+# It is not a good idea to include inc/releng_getopts.inc with the
+# master script as it calls the subordinate scripts and they include
+# this file too, and we want to avoid sharing variable with subshells
+if [ ! -f inc/releng_getopts.inc ]; then
+  printf "\nPlease execute the tests from releng directory.\n\n"
+  exit 1
+fi
+
+# To catch the exit value of a command in a pipe
+return_value_file="$GEN_DATA_DIR"/run_all_"$$"_return_value
+return_wrapper()
+{
+ cmd="$1"
+ shift 1
+ "$cmd" "$@"
+ RET="$?"
+ echo "$RET" >"$return_value_file"
+ return "$RET"
+}
+
+# Using only bash builtin commands.
+# On 4 year old amd64 x2 3000 MHz, xterm local,it counts 22471 lines per second
+# On 2 year old amd64 x4 2600 MHz, ssh remote, it counts 35348 lines per second
+count_lines()
+{
+ # $1 if not empty: start count
+ line=
+ if test -n "$1"
+ then
+   count="$1"
+ else
+   count=0
+ fi
+ while read line
+ do
+   count=$(($count + 1))
+   printf "\r  %4d lines logged ... " "$count" >&2
+   printf "%s\n" "$line"
+ done
+ return 0
+}
+
+#############################################
+print_usage()
+{
+cat << HLP
+
+${SELF} runs executables from releng directory starting with auto_*,
+and passing them its own options. stdout/stderr output is stored in:
+./${CLOG} (last run) and
+./${CLOG_PREV} (previous run)
+
+Usage: ${SELF} -x path/to/xorriso [-k] [-c] [-h]
+   -x  absolute or relative path to xorriso binary to be run.
+   -k  keep self-generated data in ./${GEN_DATA_DIR}.
+   -c  cleanup self-generated data kept from previous run and exit.
+   -h  print this help text
+				   
+Examples:
+# run xorriso and keep the self-generated data
+ $ ./${SELF} -x path/to/xorriso -k
+
+# clean up self-generated data from previous run
+ $ ./${SELF} -c
+
+HLP
+}
+
+#############################################
+if [ ! "${1}" ]; then
+ print_usage
+ exit 0
+fi
+next_is=
+for i in "$@"
+do
+  if test x"$i" = x"-h" -o x"$i" = x"--h" -o x"$i" = x"-help" -o x"$i" = x"--help"
+  then :
+       print_usage
+       exit 0
+  fi
+
+  if test "$next_is" = "ignore"
+  then :
+  elif test "$next_is" = "x"
+  then
+       RELENG_XORRISO="$i"
+       next_is=
+  elif test x"$i" = x"-x"
+  then
+       next_is="x"
+  elif test x"$i" = x"-c"
+  then
+       CLEANUP_LOG=1
+  fi
+done
+#############################################
+if test "$next_is" = x
+then
+       echo
+       echo "Option -x expects an argument (the path to the xorriso program)"
+       exit 31
+fi
+
+
+########################################################
+ if [ -f "${CLOG}" ]; then
+   mv "${CLOG}" "${CLOG_PREV}"
+ fi
+ > ${CLOG}
+ if [ -x "${RELENG_XORRISO}" ]; then
+    echo "_OVERVIEW_______________________________________________________________" >> ${CLOG}
+    date -u                                                                         >> ${CLOG}
+    ${RELENG_XORRISO} --version                                                        >> ${CLOG}
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" >> ${CLOG}
+ fi
+ DSTART=`date -u`
+ echo "${SELF}: Started at ${DSTART}" | tee -a ${CLOG}
+ E1=`date '+%s'`
+ exit_value=0
+ # require ^auto_, avoid running (your)self explicitly
+ for s in `ls | grep ^auto_ | grep -v ${SELF} | sort -n`; do
+  if [ -x ${s} -a ! -d ${s} ]; then
+    echo >> ${CLOG}
+    echo >> ${CLOG}
+    echo "_STARTING_TEST_________________________________________________________"      >> ${CLOG}
+    echo "${SELF}: Running ./${s} ${PASSED_OPTIONS} :" \
+    | tee -a ${CLOG}
+    T1=`date '+%s'`
+    set +e
+
+    if test -n "$PIPESTATUS"
+    then
+      # PIPESTATUS[0] should be available in bash
+      ./${s} ${PASSED_OPTIONS} 2>&1 | count_lines >> ${CLOG}
+      RET="${PIPESTATUS[0]}"
+    else
+      # a more portable method which uses a temporary file to record exit value
+      return_wrapper ./${s} ${PASSED_OPTIONS} 2>&1 | count_lines >> ${CLOG}
+      RET=$(cat "$return_value_file")
+      rm "$return_value_file"
+    fi
+#   echo "RET='$RET'" >/dev/tty
+
+    T2=`date '+%s'`
+    TS=`expr ${T2} - ${T1}`
+    case ${RET} in
+         0)
+           echo "done in ${TS} sec. ok."
+           ;;
+         *)
+           exit_value=2
+	   printf "done in ${TS} sec. "
+           which tput >/dev/null 2>&1 && tput smso
+           printf "FAIL -> EXIT CODE $RET"
+           which tput >/dev/null 2>&1 && tput rmso
+           echo
+           ;;
+    esac
+    set -e
+  fi
+ done
+
+ DEND=`date -u`
+ echo | tee -a ${CLOG}
+ echo -n "${SELF}: Stopped at ${DEND}." | tee -a ${CLOG}
+ if   [ "${CLEANUP_LOG}" -eq 1 ]; then
+      if [ -f "${CLOG}" ]; then
+	 rm -f "${CLOG}"
+         echo # | tee -a ${CLOG}
+         echo -n "${SELF}: Removed my own log ${CLOG}." # | tee -a ${CLOG}
+      fi
+      if [ -f "${CLOG_PREV}" ]; then
+         rm -f "${CLOG_PREV}"
+         echo # | tee -a ${CLOG}
+         echo "${SELF}: Removed my own log ${CLOG_PREV}." # | tee -a ${CLOG}
+      fi
+ else
+      E2=`date '+%s'`
+      if [ ${E2} -eq ${E1} ]; then
+        echo " Total elapsed 0 sec." | tee -a ${CLOG}
+      else
+        ES=`expr ${E2} - ${E1}`
+        echo " Total elapsed ${ES} sec." | tee -a ${CLOG}
+      fi
+      #####
+      echo >> ${CLOG}
+      echo "_SUMMARY________________________________________________________________" >> ${CLOG}
+      echo "${SELF}: Trivial log examination: ${CLOG}" | tee -a ${CLOG}
+      echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" | tee -a ${CLOG}
+      # severity classes of libdax_msgs.h in libburn and libisofs
+      # List of boring keywords:
+      #   'UPDATE|NOTE|DEBUG|ALL' - not considered interesting for lazy log inspection.
+      # List of interesting keywords:
+        # thrown by xorriso and underlying libraries
+      LIST_KWD="NEVER|ABORT|FATAL|FAILURE|MISHAP|SORRY|WARNING|HINT"
+        # thrown by others
+      LIST_KWD="${LIST_KWD}|FAIL|ERROR|WRONG"
+
+      if [ -f "${CLOG}" ]; then
+          set +e
+	  # lines, perl regex, leading tabs
+          grep -n -E "${LIST_KWD}" "${CLOG}"
+	  RET_GREP="$?"
+          case ${RET_GREP} in
+              0) # found
+                 ;;
+              1) # not found
+		 echo "${SELF}: Log file looks clear." # | tee -a ${CLOG}
+                 ;;
+	      *) #
+                 echo "${SELF}: grep returned EXIT CODE: ${RET_GREP}." # | tee -a ${CLOG}
+		 ;;
+          esac
+	  set -e
+      fi
+      echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" | tee -a ${CLOG}
+
+      ##### TODO: work out a less noisy diff'ing technique!
+      if [ -f "${CLOG_PREV}" -a -f "${CLOG}" ]; then
+        echo "${SELF}: See diff against previous log file (might be long):" | tee -a ${CLOG}
+	echo "diff -Naur ${CLOG_PREV} ${CLOG} | less" | tee -a ${CLOG}
+      fi
+
+ fi
+ 
+ #
+ which tput >/dev/null 2>&1 && tput smso
+ echo # | tee -a ${CLOG}
+ echo "${SELF}: Leaving the following cruft in ${GEN_DATA_DIR}:" # | tee -a ${CLOG}
+ which tput >/dev/null 2>&1 && tput rmso
+ ls -lth "${GEN_DATA_DIR}" # | tee -a ${CLOG}
+
+ # Fin
+ exit $exit_value
+

@@ -1,0 +1,127 @@
+------------------------------------------------------------------------------
+                                xorriso-tcltk
+------------------------------------------------------------------------------
+Copyright (C) 2012 - 2013
+Thomas Schmitt <scdbackup@gmx.net>, libburnia-project.org
+Provided under BSD license: Use, modify, and distribute as you like.
+------------------------------------------------------------------------------
+
+xorriso-tcltk is mainly a proof of concept for a frontend that operates
+xorriso in dialog mode.
+
+Dependencies:
+- xorriso ISO 9660 Rock Ridge filesystem manipulator and CD/DVD/BD burn program
+- Tcl programming language
+- Tk widget toolkit
+- optionally the Tcl/Tk package BWidget
+
+It exercises several fundamental gestures of communication:
+- connecting via two pipes
+- sending commands
+- receiving replies
+- inquiring the xorriso message sieve
+- using the xorriso parsing service
+
+Note that any other language than Tcl/Tk could be used, if it only can
+do i/o via standard input and standard output or via named pipes.
+Further it has to perform integer arithmetics and string manipulations.
+And, well, a graphical widget set would be nice.
+
+See man xorriso for a documentation of xorriso concepts and commands.
+See man xorrecord for details of the burn image file feature.
+
+
+                             Quick start
+
+In the xorriso build directory, without installation of xorriso:
+
+  xorriso/xorriso -launch_frontend frontend/xorriso-tcltk --stdio --
+
+After installation of xorriso by make install:
+
+  xorriso-tcltk
+
+
+                            Overview of GUI
+
+The window is separated into three main areas:
+- Connection to xorriso.
+- Management of drives and image files.
+- Inspection, manipulation, and exploitation of xorriso ISO image model.
+
+Click the rightmost mouse button while being over any of the GUI elements
+in order to get the particular help text for that element.
+There is no need to close the help window. Just click another element to
+get another help text.
+
+The "Help" button in the upper right corner gives a short overview and
+instructions for several common use cases.
+
+
+                         Program start options
+
+The Tcl shell "wish" is allergic to options which start by "-h".
+So here is the output of  xorriso-tcltk --help :
+------------------------------------------------------------------------
+
+Usage:
+  frontend/xorriso-tcltk [options]
+Options:
+ All options must be given with two dashes ("--option") in
+ order to distinguish them from any options of the Tcl shell.
+ --help
+     Print this text and exit.
+ --stdio
+     Establish connection to xorriso via stdin and stdout.
+     E.g. when letting xorriso start this frontend program:
+       xorriso -launch_frontend $(which xorriso-tcltk) --stdio --
+ --named_pipes cmd_fifo reply_fifo
+     Establish connection to a xorriso process started by:
+       xorriso -dialog on <cmd_fifo >reply_fifo
+     which is then ready for a run of:
+       xorriso-tcltk --named_pipes cmd_fifo reply_fifo
+     It is important that the parent of xorriso and of this
+     tcl/tk frontend opens the named pipe for commands before
+     it opens the named pipe for replies. This avoids deadlock.
+ --silent_start
+     Do not issue the start message xorriso-tcltk-version.
+     This works only if --silent_start is the first argument.
+ --no_extract
+     Do not allow extraction of files from ISO filesystem to
+     hard disk. This is not revokable during the program run.
+ --no_bwidget
+     Do not try to load the Tcl/Tk package BWidget which is
+     a prerequisite for the "/" file browser buttons.
+ --geometry {+|-}X{+|-}Y
+     Sets the position of the main window.
+ --click_to_focus
+     Chooses that input fields and list boxes get the keyboard
+     focus only when being clicked by the mouse. (Default)
+ --auto_focus
+     Chooses that the keyboard focus is where the mouse
+     pointer is.
+ --pipe_log_file path
+     Set a file address for logging of xorriso commands and
+     reply messages and enable this logging.
+     The log lines will be appended. Path "-" means stderr.
+ --script_log_file path
+     Set a file address for logging of essential xorriso
+     commands and enable this logging.
+     The log lines will be appended. Path "-" means stderr.
+ --script_log_all_commands
+     With logging of commands log non-essential commands too.
+ --use_command_move
+     Use xorriso command -move for the "Move to: button
+     if xorriso version is >= 1.2.8
+ --use_command_mv
+     Use xorriso command -mv for the "Move to:" button.
+
+If neither --stdio nor --named_pipes is given, then this script
+will try to locate itself in the filesystem and start a xorriso
+run that launches it again.
+
+In the running GUI, click with the rightmost mouse button on
+any GUI element to get its particular help text.
+
+------------------------------------------------------------------------
+

@@ -1,0 +1,232 @@
+
+The partition offset feature of libisofs can produce ISO 9660 images which bear
+a quite conventional partition table if copied onto a USB stick. The first
+partition marks the size of the ISO image but starts at a non-zero address.
+Thus it marks a small part of the device as unclaimed by partitions and
+available for storing boot loader code.
+
+Nevertheless the USB stick is mountable via its overall device file as well as
+via the partition device file. E.g. on GNU/Linux: /dev/sdb and /dev/sdb1.
+This is achieved by two distinct sets of meta-data which refer to the same
+file content.
+
+The dual-mount feature supports Rock Ridge and Joliet too.
+It is capable of multi-session.
+
+Currently only offset 32 kB seems to make sense. Smaller offsets are prohibited
+by fundamental assumptions of libisofs and libisoburn. Larger offsets would
+extend the unclaimed area into vital blocks of the ISO image.
+
+--------------------------------------------------------------------------
+
+Meanwhile Debian
+[http://cdimage.debian.org/cdimage/daily-builds/daily/current/ daily]
+and [http://cdimage.debian.org/cdimage/weekly-builds/ weekly] builds make
+use of this feature with their bootable ISO images for i386 and amd64. E.g. 
+[http://cdimage.debian.org/cdimage/daily-builds/daily/current/i386/iso-cd/debian-testing-i386-businesscard.iso debian-testing-i386-businesscard.iso].
+
+According to a
+[http://syslinux.zytor.com/archives/2011-March/016201.html thread of march 2011]
+on Syslinux mailing list this enabled booting of a Kontron CG2100 server
+from USB stick, which otherwise failed.
+
+Regrettably the feature seems to prevent mounting of ISO 9660 images on
+Apple "Snow Leopard" systems.
+At least this is the outcome of a
+[http://lists.debian.org/debian-cd/2011/04/msg00029.html debian-cd thread of april 2011].
+
+--------------------------------------------------------------------------
+
+Example:
+
+Testing mountability and ISOLINUX bootability from USB stick and CD.
+
+Overview:
+
+The test image was derived from one year old RIPLinux-9.3-non-X.iso which
+has an isohybrid MBR. Syslinux version seems to be 3.82. That MBR and the file
+tree from the mounted RIPLinux image was used to build a new ISO image
+with 16 * 2kB partition offset. Isohybrid MBR patching was done by xorriso.
+
+Details:
+
+The first 32 kB of an ISO 9660 image are called System Area and may host any
+byte pattern. In the case of RIPLinux-9.3-non-X.iso only the first 512 bytes
+are non-zero. But to avoid any assumptions, all 32 kB get copied here.
+{{{
+  dd if=RIPLinux-9.3-non-X.iso bs=1K count=32 of=RIPLinux-9.3-non-X.sysarea
+}}}
+Normally the System Area file with its MBR is provided by the Syslinux
+installation under the name isohdp[fp]x*.bin .
+E.g. /usr/lib/syslinux/isohdpfx.bin
+
+The files of the image are made accessible for reading
+{{{
+  mount -o loop RIPLinux-9.3-non-X.iso /mnt
+}}}
+
+A new ISO image gets composed. The first three lines of arguments are taken
+from the prescriptions of ISOLINUX wiki and adapted to the names used in
+RIPLinux-9.3-non-X.iso.
+Option -isohybrid-mbr imports the copied System Area and patches the MBR
+according to rules published by hpa on Syslinux mailing list.
+Option -partition_offset 16 causes the first partition to start at 2 kB block
+number 16. It also prepares the image to be mountable by this partition, too.
+{{{
+  xorriso -as mkisofs \
+     -o new_image.iso \
+     -b boot/isolinux/isolinux.bin -c boot/boot.cat \
+     -no-emul-boot -boot-load-size 4 -boot-info-table \
+     -isohybrid-mbr RIPLinux-9.3-non-X.sysarea \
+     -partition_offset 16 \
+     /mnt
+}}}
+The image was copied onto a USB stick
+{{{
+  dd if=new_image.iso of=/dev/sdc
+}}}
+and plugged into a Debian system.
+{{{
+  fdisk -lu /dev/sdb
+}}}
+yields
+{{{
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1   *          64      120831       60384   17  Hidden HPFS/NTFS
+}}}
+
+I can mount /dev/sdb and /dev/sdb1 alike:
+{{{
+  mount /dev/sdb1 /mnt1
+  mount -o loop /dev/sdb /mnt
+}}}
+-o loop avoids failure with "mount: /dev/sdb already mounted or /mnt busy".
+A comparison by
+{{{
+  diff -r /mnt /mnt1
+}}}
+reports no difference.
+Human readable files look ok.
+Test-reading all content by
+{{{
+  tar cf - /mnt | wc
+}}}
+yields a reasonable byte count of 60743680 and no errors.
+
+The machine boots RIPLinux from this USB stick with no visible problems.
+It can then mount /dev/sdb as well as /dev/sdb1.
+The ISO image boots from CD too.
+
+Mounting the partition can be simulated with an image file on hard disk by
+cutting off the first partition_offset blocks of 2 KB:
+{{{
+  dd if=new_image.iso of=partition_image.iso bs=2048 skip=16
+  mount -o loop partition_image.iso /mnt1
+}}}
+
+--------------------------------------------------------------------------
+
+Another test was made with GRUB 2 by downloading
+{{{
+  bzr branch http://bzr.savannah.gnu.org/r/grub/trunk/grub
+}}}
+
+Before building GRUB 2, the file
+{{{
+  util/grub-mkrescue.in
+}}}
+was edited to replace in the options of the xorriso command:
+{{{
+  --protective-msdos-label
+}}}
+by
+{{{
+  -partition_offset 16 -no-pad
+}}}
+Then GRUB 2 was built and installed.
+
+The resulting image from
+{{{
+  ./grub-mkrescue -o image.iso
+}}}
+was put onto USB stick. It passed the same tests on Debian
+as above RIPLinux example. It boots to a GRUB prompt.
+
+Due to option -no-pad the image is about 250 kB smaller than
+the image produced by original grub-mkrescue. Else it would have grown by
+about 50 kB.
+
+Unpadded ISO images are safe except for burning on CD in TAO mode.
+In this case problems may occur with reading the last few data blocks.
+So when burning onto CD make sure to require SAO mode and/or to
+require padding by 300 kB.
+Burning on DVD or BD needs no such caution. Neither does copying
+on USB stick or hard disk.
+
+Program fdisk will complain about "different physical/logical" addresses.
+This can be silenced by adding option
+{{{
+ -partition_cyl_align on
+}}}
+at the cost of image padding up to the next full MB.
+E.g. by 402 kB to 2 MB.
+
+--------------------------------------------------------------------------
+
+Open questions:
+
+- Shall the partition of an isohybrid image be marked bootable ?
+Currently xorriso keeps the 0x80 mark of an imported MBR
+resp. the 0x80 mark which xorriso sets by its own MBR
+preparations.
+  - If not to be marked bootable:
+    What equipment would the partition need to justify having the mark ?
+
+------------------------------------------------------------------------
+
+Application:
+
+The partition offset feature can be controlled by libisofs API calls
+{{{
+int iso_write_opts_set_part_offset(IsoWriteOpts *opts,
+                                   uint32_t block_offset_2k,
+                                   int secs_512_per_head,
+                                   int heads_per_cyl);
+
+int iso_write_opts_set_system_area(IsoWriteOpts *opts, char data[32768],
+                                   int options, int flag);
+}}}
+resp. by libisoburn calls
+{{{
+int isoburn_igopt_set_part_offset(struct isoburn_imgen_opts  *opts,
+                                  uint32_t block_offset_2k,
+                                  int secs_512_per_head, int heads_per_cyl);
+
+int isoburn_igopt_get_part_offset(struct isoburn_imgen_opts *opts,
+                                  uint32_t *block_offset_2k,
+                                  int *secs_512_per_head, int *heads_per_cyl);
+
+int isoburn_igopt_set_system_area(struct isoburn_imgen_opts *o,
+                                  char data[32768], int options);
+
+int isoburn_igopt_get_system_area(struct isoburn_imgen_opts *o,
+                                  char data[32768], int *options);
+}}}
+resp. by xorriso options
+{{{
+  -boot_image any partition_offset=(2kb_block_adr)
+  -boot_image any partition_sec_hd=(number)
+  -boot_image any partition_hd_cyl=(number)
+  -boot_image any partition_cyl_align(on|auto|off)
+
+  -as mkisofs ... -partition_offset (2kb_block_adr) \
+                  -partition_hd_cyl (number) \
+                  -partition_sec_hd (number) \
+                  -partition_cyl_align (on|auto|off) ...
+}}}
+
+As stated above, an offset larger than 16 would expose vital parts of the
+ISO image as unclaimed space. Values smaller than 16 are not accepted.
+So use either an offset of 16 blocks or keep the feature disabled by
+offset 0.
+

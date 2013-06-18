@@ -1,0 +1,30 @@
+Steve McIntyre <steve@einval.com>
+George Danchev <danchev@spnet.net>
+Thomas Schmitt <scdbackup@gmx.net>
+Copyright (C) 2000-2010 Free Software Foundation, Inc., Steve McIntyre, George Danchev, Thomas Schmitt.
+
+This statement overrides for the libjte package as a whole any license
+statements by Steve McIntyre, George Danchev, and Thomas Schmitt in the
+source code files of the package. Individually they are licensed as stated.
+
+libjte contains code with explicitely unclaimed copyrights, code from programs
+and libraries with copyright of Free Software Foundation under LGPLv2.1,
+code with copyright of Steve McIntyre, George Danchev, and Thomas Schmitt
+under LGPLv2.1.
+
+In the sum, libjte is provided under this license:
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as
+    published by the Free Software Foundation; either version 2.1 of
+    the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+

@@ -1,0 +1,1651 @@
+<!-- Creator     : groff version 1.18.1 -->
+<!-- CreationDate: Fri May 17 16:58:28 2013 -->
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, via man -H, via xorriso/convert_man_to_html.sh">
+<meta name="Content-Style" content="text/css"><META NAME="description" CONTENT="man page of xorriso"><META NAME="keywords" CONTENT="man xorrecord, manual, xorrecord, CD, DVD, BD, cdrecord, compatible"><META NAME="robots" CONTENT="follow">
+<title>man 1 xorrecord</title>
+</head>
+<body BGCOLOR="#F5DEB3" TEXT=#000000 LINK=#0000A0 VLINK=#800000>
+
+<h1 align=center>man 1 xorrecord</h1>
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#EXAMPLES">EXAMPLES</a><br>
+<a href="#FILES">FILES</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+<a href="#BUGS">BUGS</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+<a href="#COPYRIGHT">COPYRIGHT</a><br>
+<a href="#CREDITS">CREDITS</a><br>
+
+<hr>
+<a name="NAME"></a>
+<h2>NAME</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>xorrecord - Emulation of CD/DVD/BD program cdrecord
+by program xorriso</p>
+</td>
+</table>
+<a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>xorrecord</b> [ options ] dev=device
+[track_source]</p>
+</td>
+</table>
+<a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>xorrecord</b> writes preformatted data to CD, DVD, and
+BD media.</p>
+<!-- INDENTATION -->
+<p>It understands some options of program cdrecord from
+cdrtools by Joerg Schilling. Its implementation is part of
+program xorriso which shares no source code with cdrtools,
+but rather makes use of libburn for communicating with the
+drive.<br>
+Another, more complete cdrecord emulator is program
+<b>cdrskin</b> which uses the same burn functions as
+<b>xorrecord</b>, but is able to burn audio CDs and to
+handle CD-TEXT.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p>&nbsp;<BR>&nbsp;<BR><b>MMC, Session, Track, Media types:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>MMC</b> is a standard out of the SCSI family which
+defines the interaction between computers and optical
+drives. Since more than a decade all CD, DVD, or BD
+recorders obey this standard regardless by what bus cabling
+they are attached to the computer. libburn relies on this
+standard compliance and on the capability of the operating
+system to perform SCSI transactions over the particular bus
+cabling.<br>
+A <b>Session</b> is a data region on an optical disc which
+usually gets written in a single sweep. It contains at least
+one <b>Track</b> which is a contiguous string of readable
+blocks. <b>xorrecord</b> produces a single session with a
+single data track which consists of blocks with 2048 bytes
+each. It chooses the write mode automatically according to
+media type, medium state, and option -multi.<br>
+On CD media there are other track types, like audio, and
+particular write modes like TAO and SAO. CD and DVD-
+media can put more than one track into a session. Some of
+these features can be addressed by program
+<b>cdrskin</b>.<br>
+MMC describes several recordable <b>media types</b> which
+roughly form two families.<b><br>
+Sequentially recordable media</b> are CD-R,
+CD-RW, DVD-R, DVD-R DL, DVD-RW,
+DVD+R, DVD+R DL, BD-R. Except DVD-R DL they can
+store more than one session if there is still unwritten
+space and if the previous session was written with option
+<b>-multi</b>. CD-RW and DVD-RW can be
+blanked in order to be re-usable from scratch.<b><br>
+Overwritable media</b> are DVD-RAM, DVD+RW, formatted
+DVD-RW, BD-RE. They offer a single session with
+a single track for random access writing. There is no need
+to blank overwritable media before re-use.<br>
+DVD-RW media are sold in sequentially recordable state
+but can be formatted once to become overwritable. See
+options <b>blank=format_overwrite</b> and
+<b>blank=deformat</b>.<br>
+If ISO 9660 filesystems are to be stored on overwritable
+media, then it is possible to emulate multiple sessions, by
+using option <b>--grow_overwriteable_iso</b>. In
+this case, the need for blanking before re-use is
+emulated too.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Drive preparation and addressing:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>The drives, CD, DVD, or BD burners, are accessed via file
+addresses which are specific to libburn and the operating
+system. Those addresses get listed by a run of <b>xorrecord
+--devices</b> or <b>xorriso
+-device_links</b>.<br>
+On GNU/Linux and FreeBSD, the user needs rw-permission
+for the device file. On Solaris, the user needs
+r-permission and privilege &quot;sys_devices&quot;,
+which is usually gained by running <b>xorrecord</b> via
+command pfexec.<br>
+These permissions resp. privileges are needed already for
+listing a drive. So it might be necessary to get the
+overview as superuser resp. via pfexec.<b><br>
+xorrecord</b> does not perform cdrecord option
+-scanbus and does not accept the addresses of form
+Bus,Target,Lun which are told by -scanbus. If support
+for these addresses is necessary, consider to use program
+cdrskin.<br>
+It is possible to let <b>xorrecord</b> work on emulated
+drives. Their addresses begin by prefix &quot;stdio:&quot;
+followed by a file address. The emulated media behavior
+depends on the file type. See man xorriso for details.<br>
+If standard output is chosen as emulated drive, then all
+program result texts, which usually appear on standard
+output, will get redirected to standard error.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p>&nbsp;<BR><b>Relation to program xorriso:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>xorrecord</b> is actually a command mode of program
+<b>xorriso</b>, which gets entered either by xorriso command
+&quot;-as cdrecord&quot; or by starting the program by
+one of the names &quot;xorrecord&quot;,
+&quot;cdrecord&quot;, &quot;wodim&quot;, or
+&quot;cdrskin&quot;.<br>
+This command mode can be left by argument
+&quot;--&quot; which leads to generic xorriso
+command mode. See <b>man xorriso</b> for its description.
+Other than in xorriso command mode, the sequence of the
+cdrecord emulation options does not matter. All pending
+actions get performed in a fixed sequence before the program
+run ends resp. before cdrecord emulation ends.</p>
+</td>
+</table>
+<a name="OPTIONS"></a>
+<h2>OPTIONS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Addressing the drive:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>--devices</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Print the list of accessible CD, DVD, or BD drives to
+standard output. Drives might be inaccessible if the user
+lacks of permissions to use them or if the drive is in use
+by another program.<br>
+Each accessible drive is shown by a line like:<br>
+0 -dev &rsquo;/dev/sr0&rsquo; rwrw-- :
+&rsquo;TSSTcorp&rsquo; &rsquo;CDDVDW
+SH-S203B&rsquo;<br>
+The libburn address of this drive is &rsquo;/dev/sr0&rsquo;.
+&rsquo;TSSTcorp&rsquo; is the name of the vendor (in this
+case: Toshiba Samsung Storage Technologies Corporation),
+&rsquo;CDDVDW SH-S203B&rsquo; is the model name (in
+this case: a DVD burner).<br>
+Afterwards end emulation without performing any further
+drive operation.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>dev=drive_address</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Set the libburn address of the drive to be used.<br>
+E.g. on GNU/Linux: dev=/dev/sr0<br>
+E.g. on FreeBSD: dev=/dev/cd0<br>
+E.g. on Solaris: dev=/dev/rdsk/c2t2d0s2<br>
+See also above &quot;Drive preparation and
+addressing&quot;.<br>
+The medium in the drive should not be mounted or be
+otherwise in use.<br>
+This option will only get into effect if a track source, a
+blank= option, or a drive inquiry option is given. Else it
+will lead to a SORRY event and normally cause a
+non-zero exit value.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>&nbsp;<BR><b>Inquiring drive and media:</b><BR>&nbsp;<BR></p></td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="13%"></td>
+<td width="5%">
+
+<p><b>-inq</b></p>
+</td>
+<td width="2%"></td>
+<td width="77%">
+
+<p>Print to standard output: vendor, model name, and
+firmware revision of the drive.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>-checkdrive</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Print unconditionally that the drive supports burnfree,
+SAO, and TAO. Also print the output of option
+-inq.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="13%"></td>
+<td width="7%">
+
+<p><b>-atip</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>Print the output of -checkdrive, the most capable
+profile of the medium in the drive, the list of profiles
+which are supported by the drive, whether it is erasable
+(i.e. can be blanked), the media manufacturer, and the
+medium product name.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Profiles are usage models, which are often tied to a
+particular media type (e.g. CD-RW), but may also apply
+to a family of media. E.g. profile CD-ROM applies to
+all CD media which contain data.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="5%">
+
+<p><b>-toc</b></p>
+</td>
+<td width="4%"></td>
+<td width="77%">
+
+<p>Print a table of content of the medium in the drive. The
+output is not compatible to cdrecord option -toc, but
+rather the one of <b>xorriso</b> command -toc. It
+lists the address, vendor, model name, and firmware revision
+of the drive.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>About the medium it tells product name and manufacturer,
+whether there is already content written, and if so, whether
+the medium is closed or appendable. Appendable media can
+take another session. The amount of readable and writable
+data is told. If there are sessions, then their start block
+address and size is reported. If a session contains an ISO
+9660 filesystem, then its Volume Id is reported. If the
+medium is writable, then the next writable block address is
+reported.<br>
+If not option <b>--grow_overwriteable_iso</b> is
+given or no ISO 9660 file system is present on the medium,
+then overwritable media are reported as being blank. This is
+due to the fact that they can be written from scratch
+without further preparation, and that MMC does not
+distinguish between data written by the most previous burn
+run and older data which have not been overwritten by that
+burn run. Consequently, these media are reported with 0
+readable blocks, although all their writable blocks normally
+are readable, too.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>-msinfo</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Print the argument text for option -C of programs
+mkisofs, genisoimage, or xorrisofs. It consists of two
+numbers separated by a comma.<br>
+The first number tells the first block of the first track of
+the last recorded session. This is also the address used by
+default when operating systems mount a medium with e.g. ISO
+9660 filesystem.<br>
+The second number tells the next writable address, where
+<b>xorrecord</b> will begin to write the next session.<br>
+This option is only valid for written, appendable media. In
+all other cases it will yield no output text but will abort
+the program with non-zero exit value.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Settings for the burn run:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>A burn run requires exactly one track source address
+argument, which tells from where to read the data wich shall
+be put into the upcomming session. The medium state must be
+either blank or appendable.<br>
+Track source may be &quot;-&quot; for standard input
+or the address of a readable file of any type except
+directories. Nearly all media types accept a track source
+with unpredictable byte count, like standard input or named
+pipes. Nevertheless, DVD-R DL and DVD-RW blanked
+by mode deformat_quickest demand exact in-advance
+reservation of the track size, so that they either need to
+be read from a source of predictable length, or need to be
+accompanied by option <b>tsize=</b> or by option
+<b>-isosize</b>.<br>
+Several options expect a size value as argument. A number
+with a trailing letter &quot;b&quot; or without a trailing
+letter is a plain byte count. Other trailing letters cause
+multiplication of the given number by a scaling factor:<br>
+&quot;k&quot; or &quot;K&quot; = 1024 , &quot;m&quot; or
+&quot;M&quot; = 1024k , &quot;g&quot; or &quot;G&quot; =
+1024m , &quot;s&quot; or &quot;S&quot; = 2048<br>
+E.g. tsize=234567s means a size of 234567 * 2048 = 480393216
+bytes.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>blank=mode</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Blank a CD-RW or DVD-RW to make it
+re-usable from scratch. Format a DVD-RW, DVD+RW,
+DVD-RAM, BD-R, or BD-RE if not yet
+formatted.<br>
+This operation normally makes any recorded data on the
+medium unreadable. It is combinable with burning in the same
+run of <b>xorrecord</b>, or it may be performed without a
+track source, leaving the medium empty.<br>
+The mode given with blank= selects the particular
+behavior:</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="20%"></td>
+<td width="79%">
+<p>as_needed</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Try to make the media ready for writing from scratch. If
+it needs formatting, then format it. If it is not blank,
+then try to apply blank=fast. It is a reason to abort if the
+medium cannot assume thoroughly writeable state, e.g. if it
+is a non-blank write-once.<br>
+This leaves unformatted DVD-RW in unformatted blank
+state. To format DVD-RW use blank=format_overwrite.
+Blank unformatted BD-R stay unformatted.<br>
+(Note: blank=as_needed is not an original cdrecord
+option.)</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="3" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="4%">
+
+<p>all</p>
+</td>
+<td width="73%">
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Blank an entire CD-RW or an unformatted
+DVD-RW.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="3" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="5%">
+
+<p>fast</p>
+</td>
+<td width="71%">
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Minimally blank an entire CD-RW or blank an
+unformatted DVD-RW.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="20%"></td>
+<td width="79%">
+<p>deformat</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Like blank=all but with the additional ability to blank
+overwriteable DVD-RW. This will destroy their
+formatting and make them sequentially recordable.<br>
+(Note: blank=deformat is not an original cdrecord
+options)</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="20%"></td>
+<td width="79%">
+<p>deformat_quickest</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Like blank=deformat but blanking DVD-RW only
+minimally. This is faster than full blanking but yields
+media incapable of writing tracks of unpredicatable size.
+Multi-session will not be possible either.<br>
+(Note: blank=deformat_quickest is not an original cdrecord
+option.)</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="20%"></td>
+<td width="79%">
+<p>format_overwrite</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Format a DVD-RW to &quot;Restricted
+Overwrite&quot;. The user should bring some patience.<br>
+Format unformatted DVD+RW, BD-RE or blank BD-R
+to their default size. It is not mandatory to do this with
+DVD+RW and BD-RE media, because they will get
+formatted automatically on the first write attempt.<br>
+BD-R media may be written in unformatted state. This
+keeps disabled the replacement of bad blocks and enables
+full nominal write speed. Once BD-R media are written,
+they cannot be formatted any more.<br>
+For re-formatting already formatted media or for
+formatting with non-default size, use program
+<b>xorriso</b> with command <b>-format</b>.<br>
+(Note: blank=format_overwrite is not an original cdrecord
+options)</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="3" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="5%">
+
+<p>help</p>
+</td>
+<td width="71%">
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="32%"></td>
+<td width="67%">
+<p>Print a short overview of blank modes to standard error
+output.<br>
+Afterwards end emulation without performing any drive
+operation.</p></td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="3" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="13%"></td>
+<td width="8%">
+
+<p><b>-multi</b></p>
+</td>
+<td width="77%">
+
+<p>This option keeps CD, unformatted DVD-R[W], DVD+R,
+or BD-R appendable after the current session has been
+written. Without it the disc gets closed and may not be
+written any more - unless it is a -RW and gets
+blanked, which causes loss of its content.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>This option cannot be applied to DVD-R DL and
+DVD-RW which were blanked by type
+deformat_quickest.<br>
+In order to have all filesystem content accessible, the
+eventual ISO-9660 filesystem of a follow-up
+session needs to be prepared in a special way by the
+filesystem formatter program. mkisofs, genisoimage, and
+xorrisofs expect particular info about the situation which
+can be retrieved by <b>xorrecord</b> option
+-msinfo.<br>
+With overwriteable DVD or BD media, -multi cannot mark
+the end of the session. So when adding a new session, this
+end has to be determined from the payload. Currently only
+ISO-9660 filesystems can be used that way. See option
+<b>--grow_overwriteable_iso</b>.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="3" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="10%">
+
+<p><b>-dummy</b></p>
+</td>
+<td width="77%">
+
+<p>Try to perform the drive operations without actually
+affecting the inserted media. There is no warranty that this
+will work with a particular combination of drive and media.
+Blanking is prevented reliably, though. To avoid inadverted
+real burning, -dummy refuses burn runs on anything but
+CD-R[W], DVD-R[W], or emulated
+stdio-drives.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="10%">
+
+<p><b>-waiti</b></p>
+</td>
+<td width="77%">
+
+<p>Wait until input data is available at stdin or EOF
+occurs at stdin. Only then begin to access any drives.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>One should use this if xorrisofs is working at the end of
+a pipe where the feeder process reads from the drive before
+it starts writing its output into xorrisofs. Example:<br>
+xorrisofs ... -C 0,12800 -M /dev/sr0 ... | \<br>
+xorrecord dev=/dev/sr0 ... -waiti -<br>
+This option works even if standard input is not the track
+source. If no process is piping in, then the Enter key of
+your terminal will act as trigger for <b>xorrecord</b>. Note
+that this input line will not be consumed by cdrskin if
+standard input is not the track source. It will end up as
+shell command, usually.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>tsize=size</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Announce the exact size of the track source. This is
+necessary with DVD-R DL media and with quickest
+blanked DVD-RW, if the size cannot be determined in
+advance from the track source. E.g. if it is standard input
+or a named pipe.<br>
+If the track source does not deliver the predicted amount of
+bytes, the remainder of the track is padded with zeros. This
+is not considered an error. If on the other hand the track
+source delivers more than the announced bytes then the track
+on media gets truncated to the predicted size and xorrecord
+exits with non-zero value.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>-isosize</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Try to obtain the track size from the content of the
+track source. This works only if the track source bears an
+ISO 9660 filesystem. Any other track source content will
+cause the burn run to abort.<br>
+If the track source is not a regular file or block device,
+then this option will work only if the program&rsquo;s fifo
+size is at least 64k. See option fs=.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>padsize=size</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Add the given amount of trailing zeros to the upcomming
+track. This feature can be disabled by size 0. Default is
+300 kB in order to work around a problem with GNU/Linux
+which often fails to read the last few blocks of a CD track
+which was written in write mode TAO. TAO is used by
+<b>xorrecord</b> if the track size cannot be predicted or if
+the CD medium is not blank but appendable.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-nopad</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>The same as padsize=0.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-pad</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>The same as padsize=15s. This was once sufficient with
+older GNU/Linux kernels. Meanwhile one should at least use
+padsize=128k, if not padsize=300k.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-data</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>Explicitely announce that the track source shall be
+recorded as data track, and not as audio track. This option
+has no effect with <b>xorrecord</b>, because there is no
+support for other track formats anyway.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-tao</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>Explicitely demand that write type TAO shall be used for
+CD, or Incremental for DVD-R. Normally the program
+will choose the write type according to the given medium
+state, option -multi, and track source. Demanding it
+explicitely prevents the start of a write run, if it is not
+appropriate to the situation.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-sao</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>Explicitely demand that write type SAO shall be used for
+CD, or DAO for DVD-R. This might prevent the write
+run, if it is not appropriate to the situation.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-dao</b></p>
+</td>
+<td width="1%"></td>
+<td width="77%">
+
+<p>Alias of -sao.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>fs=size</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Set the size of the program fifo buffer to the given
+value rather than the default of 4m.<br>
+The fifo buffers a temporary surplus of track source data in
+order to provide the drive with a steady stream during times
+of temporary lack of track source supply.<br>
+Other than cdrecord, xorrecord enables drive buffer underrun
+protection by default and does not wait with writing until
+the fifo is full for a first time. On very old CD drives and
+slow computers, this might cause aborted burn runs. In this
+case, consider to use program <b>cdrskin</b> for CD burning.
+DVD and BD drives tolerate buffer underrun without
+problems.<br>
+The larger the fifo, the longer periods of poor source
+supply can be compensated. But a large fifo can deprive the
+operating system of read cache for better filesystem
+performance.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>speed=value</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Set the write speed. Default is 0 = maximum speed. Speed
+can be given in media type dependent x-speed numbers
+or as a desired throughput per second in MMC compliant kB (=
+1000) or MB (= 1000 kB). Media x-speed factor can be
+set explicity by appending &quot;c&quot; for CD,
+&quot;d&quot; for DVD, &quot;b&quot; for BD. &quot;x&quot;
+is optional.<br>
+Example speeds:<br>
+706k = 706kB/s = 4c = 4xCD<br>
+5540k = 5540kB/s = 4d = 4xDVD<br>
+If there is no hint about the speed unit attached, then the
+medium in the drive will decide. Default unit is CD, 1x =
+176,400 raw bytes/second. With DVD, 1x = 1,385,000
+bytes/second. With BD, 1x = 4,495,625 bytes/second.<br>
+MMC drives usually activate their own idea of speed and take
+the speed value given by the burn program only as a hint for
+their own decision.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="8%">
+
+<p><b>-eject</b></p>
+</td>
+<td width="13%"></td>
+<td width="66%">
+
+<p>Eject the drive tray after alll other work is done.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>&nbsp;<BR><b>Program version and verbosity:</b><BR>&nbsp;<BR></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>-version</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Print to standard output a line beginning by<br>
+&quot;Cdrecord 2.01-Emulation Copyright&quot;<br>
+and further lines which report the version of xorriso and
+its supporting libraries. They also state the license under
+which the program is provided, and disclaim any warranty, to
+the extent permitted by law.<br>
+Afterwards end emulation without performing any drive
+operation.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="4%">
+
+<p><b>-v</b></p>
+</td>
+<td width="5%"></td>
+<td width="77%">
+
+<p>Increase program verbosity by one level. There are four
+verbosity levels from nearly silent to debugging verbosity.
+The both highest levels can be enabled by repeated -v
+or by -vv resp. -vvv.</p>
+</td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="4%">
+
+<p><b>-V</b></p>
+</td>
+<td width="5%"></td>
+<td width="77%">
+
+<p>Log SCSI commands and drive replies to standard error.
+This might be of interest if <b>xorrecord</b> and a
+particular drive or medium do not cooperate as expected, or
+if you just want to know how libburn interacts with the
+drive. To understand this extremely verbous log, one needs
+to read SCSI specs SPC, SBC, and MMC.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Please do not add such a log to a bug report on the first
+hand, unless you want to point out a particular deviation
+from said specs, or if you get asked for this log by a
+maintainer of <b>xorrecord</b> who feels in charge for your
+bug report.</p>
+</td>
+</table>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="7%">
+
+<p><b>-help</b></p>
+</td>
+<td width="2%"></td>
+<td width="77%">
+
+<p>Print a sparse list of program options to standard error
+and declare not to be cdrecord.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Afterwards end emulation without performing any drive
+operation.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>&nbsp;<BR><b>Options not compatible to cdrecord:</b><BR>&nbsp;<BR></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>--no_rc</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Only if used as first command line argument this option
+prevents reading and interpretation of startup files. See
+section FILES below.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>--grow_overwriteable_iso</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Enable emulation of multi-session writing on
+overwriteable media which contain an ISO 9660 filesystem.
+This emulation is learned from growisofs -M but
+adapted to the usage model of<br>
+xorrecord -msinfo<br>
+xorrisofs -C -M | xorrecord -waiti
+-multi -<br>
+for sequential media.<br>
+--grow_overwriteable_iso does not hamper the use
+of true multi-session media. I.e. it is possible to
+use the same <b>xorrecord</b> options with both kinds of
+media and to achieve similar results if ISO 9660 filesystem
+images are to be written. This option implies option
+-isosize and therefore demands that the track source
+is a ISO 9660 filesystem image.<br>
+With overwriteable media and no option blank=fast|all
+present it expands an eventual ISO 9660 filesystem on media.
+It is assumed that this image&rsquo;s inner size description
+points to the end of the valuable data. Overwriteable media
+with a recognizable ISO 9660 size will be regarded as
+appendable rather than as blank. I.e. options -msinfo
+and -toc will work. -toc will always show a
+single session with its size increasing with every added ISO
+9660 image.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+
+<p><b>stream_recording=&quot;on&quot;|&quot;off&quot;|number</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Mode &quot;on&quot; requests that compliance to the
+desired speed setting is preferred over management of write
+errors. With DVD-RAM and BD this can bring effective
+write speed near to the nominal write speed of the media.
+But it will also disable the automatic use of replacement
+blocks if write errors occur. It might as well be disliked
+or ignored by the drive.<br>
+If a number is given, then error management stays enabled
+for all byte addresses below that number. Any number below
+16s is the same as &quot;off&quot;.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+
+<p><b>dvd_obs=&quot;default&quot;|&quot;32k&quot;|&quot;64k&quot;</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Linux specific: Set the number of bytes to be transmitted
+with each write operation to DVD or BD media. Tracks get
+padded up to the next multiple of this write size. A number
+of 64 KB may improve throughput with bus systems which show
+latency problems. The default depends on media type, option
+stream_recording=, and on compile time options.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>write_start_address=value</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Set the block address on overwritable media where to
+start writing the track. With DVD+RW, DVD-RAM or
+BD-RE, byte_offset must be aligned to 2 kiB blocks,
+but better is 32 kiB on DVD and 64 kiB on BD. With formatted
+DVD-RW 32 kiB alignment is mandatory.<br>
+Other media are not suitable for this option.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+
+<p><b>stdio_sync=&quot;on&quot;|&quot;off&quot;|number</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Set the number of bytes after which to force output to
+emulated stdio: drives. This forcing keeps the memory from
+being clogged with lots of pending data for slow devices.
+Default &quot;on&quot; is the same as &quot;16m&quot;.
+Forced output can be disabled by &quot;off&quot;.</p>
+</td>
+</table>
+<a name="EXAMPLES"></a>
+<h2>EXAMPLES</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Overview of examples:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Get an overview of drives and their addresses<br>
+Get info about a particular drive or loaded media<br>
+Prepare CD-RW or DVD-RW for re-use, BD-R for bad block
+handling<br>
+Format DVD-RW to avoid need for blanking before re-use<br>
+De-format DVD-RW to make it capable of multi-session
+again<br>
+Write a single ISO 9660 filesystem image<br>
+Write multiple ISO 9660 sessions<br>
+Write ISO 9660 session on-the-fly<br>
+Write compressed afio archive on-the-fly</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Get an overview of drives and their
+addresses:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord --devices</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Get info about a particular drive and loaded
+media:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord dev=/dev/sr0 -atip -toc
+--grow_overwriteable_iso</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Prepare CD-RW or DVD-RW for re-use:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord -v dev=/dev/sr0 blank=as_needed
+-eject</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Format DVD-RW to avoid need for blanking before
+re-use:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord -v dev=/dev/sr0 blank=format_overwrite
+-eject<br>
+This command may also be used to format BD-R media
+before first use, in order to enable handling of write
+errors. Several hundred MB of spare blocks will be reserved
+and write runs on such media will perform with less than
+half nominal speed.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>De-format DVD-RW to make it capable of multi-session
+again:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord -v dev=/dev/sr0 blank=deformat</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Write a single ISO 9660 filesystem image:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>$ xorrecord -v dev=/dev/sr0 speed=12 fs=8m \
+blank=as_needed -eject padsize=300k my_image.iso</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Write multiple ISO 9660 sessions:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>This is possible with all media except minimally blanked
+DVD-RW and DVD-R DL, which cannot do
+multi-session.<br>
+The first session is written like in the previous example,
+except that option -multi is used. It will contain the
+files of hard disk directory ./tree1 under the ISO 9660
+directory /dir1:<br>
+$ xorrisofs -o image_1.iso -J
+-graft-points /dir1=./tree1<br>
+$ xorrecord -v dev=/dev/sr0 speed=12 fs=8m \<br>
+-multi --grow_overwriteable_iso \<br>
+blank=as_needed -eject padsize=300k image_1.iso<br>
+For the second session xorrisofs needs to know the
+-msinfo numbers of the medium. Further it will read
+data from the medium by using the system&rsquo;s
+read-only CD-ROM driver.<br>
+It is advised to load the tray manually or via dd by the
+CD-ROM driver, rather than letting xorrecord do this
+by its own SCSI driver. Many system CD-ROM drivers do
+not take notice of xorrecord&rsquo;s activities.<br>
+$ dd if=/dev/sr0 count=1 &gt;/dev/null 2&gt;&amp;1<br>
+Now get the -msinfo numbers:<br>
+$ m=$(xorrecord dev=/dev/sr0 -msinfo)<br>
+and use them with xorrisofs to add ./tree2 to the image as
+/dir2:<br>
+$ xorrisofs -M /dev/sr0 -C $m -o
+image_2.iso \<br>
+-J -graft-points /dir2=./tree2<br>
+Now burn the new session onto the same medium. This time
+without blanking:<br>
+$ xorrecord -v dev=/dev/sr0 speed=12 fs=8m \<br>
+-multi --grow_overwriteable_iso \<br>
+-eject padsize=300k image_2.iso<br>
+Operating systems which mount this medium will read the
+superblock of the second session and show both directories
+/dir1 and /dir2.</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Write ISO 9660 session on-the-fly:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>It is possible to combine the run of <b>xorrisofs</b> and
+<b>xorrecord</b> in a pipeline without storing the ISO 9660
+image as file on hard disk:<br>
+$ xorrisofs -M /dev/sr0 -C $m \<br>
+-J -graft-points /dir2=./tree2 \<br>
+| xorrecord -v dev=/dev/sr0 speed=12 fs=8m \<br>
+-waiti -multi
+--grow_overwriteable_iso \<br>
+-eject padsize=300k -<br>
+This is also the main use case of program <b>xorriso</b>
+itself, where this run would look like:<br>
+$ xorriso -dev /dev/sr0 -joliet on -speed
+12 -fs 8m \<br>
+-map ./tree2 /dir2 -commit_eject all</p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Write compressed afio archive on-the-fly:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>This is possible with all media except minimally blanked
+DVD-RW and DVD-R DL. Since the compressed output
+stream is of very variable speed, a larger fifo is advised.
+Nevertheless, this example is not suitable for very old CD
+drives which have no underrun protection and thus would
+abort the burn run on temporary data shortage.<br>
+$ find . | afio -oZ - | \<br>
+xorrecord -v dev=/dev/sr0 speed=12 fs=64m \<br>
+-multi padsize=300k -<br>
+afio archives do not contain references to absolute data
+block addresses. So they need no special precautions for
+multi-session. One may get the session start addresses
+by option -toc, and then use dd option skip= to begin
+reading at one of those addresses. E.g. for listing its
+content:<br>
+$ dd if=/dev/sr0 bs=2048 skip=64046 | afio -tvZ
+-<br>
+afio will know when the end of the archive is reached.</p>
+</td>
+</table>
+<a name="FILES"></a>
+<h2>FILES</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="4%"></td>
+<td width="95%">
+<p><b>Startup files:</b></p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>If not --no_rc is given as the first argument
+then <b>xorrecord</b> attempts on startup to read and
+execute lines from the following files:<br>
+/etc/default/xorriso<br>
+/etc/opt/xorriso/rc<br>
+/etc/xorriso/xorriso.conf<br>
+$HOME/.xorrisorc<br>
+The files are read in the sequence given here, but none of
+them is required to exist. The lines are not interpreted as
+<b>xorrecord</b> options but as generic <b>xorriso</b>
+commands. See man xorriso.</p>
+</td>
+</table>
+<a name="SEE ALSO"></a>
+<h2>SEE ALSO</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>For generic xorriso command mode</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p><b>xorriso(1)</b></p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Formatting track sources for xorrecord:</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p><b>xorrisofs(1), mkisofs(8), genisoimage(8), afio(1),
+star(1)</b></p>
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Other programs which burn sessions to optical
+media</p></td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p><b>growisofs(1), cdrecord(1), wodim(1),
+cdrskin(1)</b></p>
+</td>
+</table>
+<a name="BUGS"></a>
+<h2>BUGS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>To report bugs, request help, or suggest enhancements for
+<b>xorriso</b>, please send electronic mail to the public
+list &lt;bug-xorriso@gnu.org&gt;. If more privacy is
+desired, mail to &lt;scdbackup@gmx.net&gt;.<br>
+Please describe what you expect <b>xorriso</b> to do, the
+program arguments resp. commands by which you tried to
+achieve it, the messages of <b>xorriso</b>, and the
+undesirable outcome of your program run.<br>
+Expect to get asked more questions before solutions can be
+proposed.</p>
+</td>
+</table>
+<a name="AUTHOR"></a>
+<h2>AUTHOR</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Thomas Schmitt &lt;scdbackup@gmx.net&gt;<br>
+for libburnia-project.org</p>
+</td>
+</table>
+<a name="COPYRIGHT"></a>
+<h2>COPYRIGHT</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Copyright (c) 2011 - 2013 Thomas Schmitt<br>
+Permission is granted to distribute this text freely. It
+shall only be modified in sync with the technical properties
+of xorriso. If you make use of the license to derive
+modified versions of xorriso then you are entitled to modify
+this text under that same license.</p>
+</td>
+</table>
+<a name="CREDITS"></a>
+<h2>CREDITS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>xorriso</b> is in part based on work by Vreixo Formoso
+who provides libisofs together with Mario Danic who also
+leads the libburnia team. Thanks to Andy Polyakov who
+invented emulated growing, to Derek Foreman and Ben Jansens
+who once founded libburn.<br>
+Compliments towards Joerg Schilling whose cdrtools served me
+for ten years.</p>
+</td>
+</table>
+<hr>
+<BR><HR><FONT SIZE=-1><CENTER>(HTML generated from xorrecord.1 on Fri May 17 16:58:28 CEST 2013 by man_xorrecord_to_html.sh )</CENTER></FONT></body>
+</html>

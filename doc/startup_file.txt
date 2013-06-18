@@ -1,0 +1,22 @@
+# This is an example for a xorriso startup file.
+# If found at one of the following addresses then its text lines will get
+# executed by xorriso as commands before any of its program arguments:
+#   /etc/default/xorriso
+#   /etc/opt/xorriso/rc
+#   /etc/xorriso/xorriso.conf
+#   $HOME/.xorrisorc
+# Note: Command -no_rc as first program argument prevents this execution.
+
+
+# Disallow the use of hard disk /dev/sda and its partitions as
+# pseudo-drive (e.g. as output target of an ISO image).
+
+-drive_class banned   /dev/sda*
+
+  
+# Allow the use of /dev/sdb, /dev/sdc, and /dev/sdd as pseudo-drives
+# without the prefix "stdio:" which is usually required for device addresses
+# which begin by "/dev/" but represent no CD drives.
+
+-drive_class harmless /dev/sd[bcd]
+

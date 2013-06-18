@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Licensed under GNU GPL version 2 or later
+
+set -e
+
+not_in_releng_exit() {
+  printf "\nPlease execute the tests from releng directory.\n\n"
+  exit 1
+}
+
+# Include common bits
+. inc/releng_getopts.inc || not_in_releng_exit
+
+print_specific_help() {
+cat << HLP
+Specific options:
+       none yet.
+Overview:
+       Test performance of print_size against various input tree.
+       Optionally compare with genisoimage and mkisofs.
+HLP
+}
+
+if test "$SPECIFIC_HELP" = 1; then
+  print_specific_help
+  exit 0
+fi
+
+# Each test should decide whether or not it needs
+# a xorriso binary to test, since some do compilations only.
+if [ ! -x $RELENG_XORRISO ]; then
+ print_help
+ printf "\n${SELF}: -x  absolute or relative path to binary to be run.\n\n"
+ exit 31
+fi
+
+# check data dir, if any and after checking -x xorriso
+if [ -d "${GEN_DATA_DIR}" ]; then
+ printf "\n${SELF}: directory %s exists!" ${GEN_DATA_DIR}
+ printf "\n${SELF}: use '${SELF} -c' to remove.\n"
+ exit 8
+else
+ mkdir "${GEN_DATA_DIR}"
+fi
+
+#
+DIR_UPPER=32
+FILE_UPPER=10
+
+# All must be set at this point
+# TODO: work out a smarter way to quickly generate different
+# types of trees (long, deep, etc)
+printf "\n${SELF}: Generating sample tree in ${GEN_DATA_DIR} :\n"
+count=0
+date
+
+# Hopefully the for-loops are much faster than while-loops with arithmetics
+# This needs 7/4*DIR_UPPER+FILE_UPPER (= 66) while-iterations
+#
+i1_list= 
+i1=0
+o1=$(expr ${DIR_UPPER} / 4)
+while test $i1 -lt $o1
+do
+  i1_list="$i1_list $i1"
+  i1=$(expr $i1 + 1)
+done
+i2_list= 
+i2=0
+o2=$(expr ${DIR_UPPER} / 2)
+while test $i2 -lt $o2
+do
+  i2_list="$i2_list $i2"
+  i2=$(expr $i2 + 1)
+done
+i3_list= 
+i3=0
+while test $i3 -lt ${DIR_UPPER}
+do
+  i3_list="$i3_list $i3"
+  i3=$(expr $i3 + 1)
+done
+i_file_list= 
+i_file=0
+while test $i_file -lt ${FILE_UPPER}
+do
+  i_file_list="$i_file_list $i_file"
+  i_file=$(expr $i_file + 1)
+done
+#
+# plus 1/8*DIR_UPPER*DIR_UPPER*DIR_UPPER*FILE_UPPER (= 40960) for-iterations
+#
+for i1 in $i1_list
+do
+  for i2 in $i2_list
+  do
+    for i3 in $i3_list
+    do
+      mkdir -p ${GEN_DATA_DIR}/DirOne$i1/DirTwo$i2/DirThree$i3
+      for i_file in $i_file_list
+      do
+        echo -n \
+             > ${GEN_DATA_DIR}/DirOne$i1/DirTwo$i2/DirThree$i3/File_${i_file}
+        count=$((count + 1))
+      done
+    done
+  done
+  echo "  ${count} files created ..."
+done
+
+printf "done.\n"
+date
+du -s "${GEN_DATA_DIR}"
+
+printf "\n${SELF}: Performing several print size runs to neutralize possible disk cache impact.\n"
+
+# run xorriso
+if [ -x ${RELENG_XORRISO} ]; then
+  for run in 1 2 3; do
+      printf "\n${SELF}: Running ${RELENG_XORRISO} -as mkisofs -quiet -print-size ${GEN_DATA_DIR}. Trial: ${run}.\n"
+      time ${RELENG_XORRISO} -as mkisofs -quiet -print-size ${GEN_DATA_DIR}
+  done
+fi
+
+# try to run genisoimage
+if which genisoimage >/dev/null 2>&1; then
+  RELENG_GENISOIMAGE=`which genisoimage`
+  for run in 1 2 3; do
+      printf "\n${SELF}: Running ${RELENG_GENISOIMAGE} -quiet -print-size ${GEN_DATA_DIR}. Trial: ${run}.\n"
+      time ${RELENG_GENISOIMAGE}         -quiet -print-size ${GEN_DATA_DIR}
+  done
+fi
+
+# try to run mkisofs
+if which mkisofs >/dev/null 2>&1; then
+  RELENG_MKISOFS=`which mkisofs`
+  for run in 1 2 3; do
+      printf "\n${SELF}: Running ${RELENG_MKISOFS} -quiet -print-size ${GEN_DATA_DIR}. Trial: ${run}.\n"
+      time ${RELENG_MKISOFS}             -quiet -print-size ${GEN_DATA_DIR}
+  done
+fi
+
+#
+cleanup
+
+#
+exit 0

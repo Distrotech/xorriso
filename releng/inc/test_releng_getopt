@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+. releng_getopts.inc
+
+printf "\nRELENG_XORRISO   =${RELENG_XORRISO}"
+printf "\nKEEP             =${KEEP}"
+printf "\nCLEANUP          =${CLEANUP}"
+printf "\nSIMULATE_FAILURE =${SIMULATE_FAILURE}"
+printf "\n"
+
+exit 0

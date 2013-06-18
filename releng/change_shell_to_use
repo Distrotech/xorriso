@@ -1,0 +1,39 @@
+
+# check whether we are in releng and create dir
+mkdir_ret=29
+if test -d releng_generated_data
+then
+  if test -d releng_generated_data/change_shell_to_use
+  then
+    mkdir_ret=0
+  else
+    mkdir releng_generated_data/change_shell_to_use
+    mkdir_ret=$?
+  fi
+fi
+
+if test "$mkdir_ret" = 0
+then
+  for i in run_all_auto auto_* manual_*
+  do
+    temp=releng_generated_data/change_shell_to_use/temp_file
+    c=$(wc -l "$i" | awk '{print $1}')
+    line=$(head -n 1 "$i")
+
+    if echo x"$line" | grep '^x#!' >/dev/null 2>&1
+    then
+      cp "$i" "$temp"
+      echo '#!'"$SHELL" > "$temp"
+      tail -n "$(expr $c - 1)" "$i" >> "$temp"
+      mv "$temp" "$i"
+      echo "Changed to #!$SHELL : $i"
+    fi
+  done
+  rmdir releng_generated_data/change_shell_to_use
+else
+  echo "change_shell_to_use: Missing directory ./releng_generated_data" >&2
+  echo "or cannot create directory ./releng_generated_data/change_shell_to_use" >&2
+  echo "change_shell_to_use: Run aborted"
+  test 1 = 0
+fi
+

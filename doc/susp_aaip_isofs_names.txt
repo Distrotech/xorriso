@@ -1,0 +1,213 @@
+                 Arbitrary Attribute Interchange Protocol
+                Interchange of Persistent File Attributes
+
+                      Directory of Namespace "isofs."
+
+          by Thomas Schmitt    - mailto:scdbackup@gmx.net
+          Libburnia project    - mailto:libburn-hackers@pykix.org
+
+
+The following names are defined for AAIP namespace "isofs." as mentioned in
+specification of AAIP :
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.ca
+
+Purpose:
+      Records the range of checksummed image data (START, END), the number
+      of checksum items (COUNT), the number of bytes in a single checksum item
+      (SIZE), and the name of the checksum algorithm (CHECKSUM_TYPE).
+      END is also the block address of the start of the checksum recording
+      area in the image.
+      See also isofs.cx .
+      This attribute shall eventually be attached to the root directory entry
+      and be global for the whole image.
+
+Format of Value:
+      START_LEN | START_BYTES | END_LEN | END_BYTES |
+      COUNT_LEN | COUNT_BYTES | SIZE_LEN | SIZE_BYTES | CHECKSUM_TYPE
+      Each number is encoded as _LEN byte and _BYTES value string.
+      The _LEN fields comply to ISO 9660 Format section 7.1.1.
+      The byte strings START_BYTES, END_BYTES, COUNT_BYTES, SIZE_BYTES begin
+      with the most significant byte. Leading zero bytes are allowed.
+      CHECKSUM_TYPE consists of the bytes after
+      START_LEN + END_LEN + COUNT_LEN + SIZE_LEN + 4.
+      It shall be a string of printable characters without terminating 0-byte.
+      Type names shall be registered here.
+      For now there is:
+       "MD5"   128 bit message digest, see RFC 1321, see man md5sum 
+
+Example:
+      LBA range 32 to 1000000 , 520 checksums recorded, MD5 
+      {   1,  32,
+          3,  15,  66,  64,
+          2,   2,   8,
+          1,  16,
+        'M', 'D', '5' }
+      or
+      {   4,   0,   0,   0,  32,
+          4,   0,  15,  66,  64,
+          4,   0,   0,   2,   8,
+          1,  16,
+         'M', 'D', '5' }
+
+Registered:
+      16 Jul 2009 by Thomas Schmitt for libisofs.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.cs
+
+Purpose:
+      Records the name of the character set that was used as output character
+      set when writing the RRIP name tree of the ISO 9660 image. It shall be
+      suitable as parameter for function iconv_open(3).
+      This attribute shall eventually be attached to the root directory entry
+      and be global for the whole image.
+
+Format of Value:
+      Shall hold the character set name without terminating 0-byte.
+
+Example:
+      { 'I', 'S', 'O', '-', '8', '8', '5', '9' , '-', '1' }
+
+Registered:
+      18 Mar 2009 by Thomas Schmitt for libisofs.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.cx
+
+Purpose:
+      Records the index of the file's checksum in the checksum area at the
+      end of the image. The byte address of the checksum is 
+       checksum_area_lba * 2048 + isofs.cx * checksum_size
+      Default checksum algorithm is MD5 with a size of 16 byte.
+      See also isofs.ca .
+
+Format of Value:
+      A byte string which begins with the most significant byte.
+
+Example:
+      Index 123456
+      {   1, 226,  64 }
+
+Registered:
+      16 Jul 2009 by Thomas Schmitt for libisofs.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.di
+
+Purpose:
+      Records .st_dev and .st_ino of struct stat of the file source in the
+      local filesystem. See man 2 stat.
+
+Format of Value:
+      DEV_LEN | DEV_BYTES | INO_LEN | INO_BYTES
+      The _LEN fields comply to ISO 9660 Format section 7.1.1.
+      The byte strings begin with the most significant byte.
+
+Example:
+      Device number 2001, inode number 176343
+      {   2,   7, 209,
+          3,   2, 176, 215 } 
+
+Registered:
+      17 Feb 2009 by Thomas Schmitt for xorriso.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.hb
+
+Purpose:
+      Records the IsoHfsplusBlessings blessing of a IsoNode as defined
+      in libisofs.h. At image load time, this info shall be converted back
+      into a relation between IsoImage and IsoNode so that it is available for
+      the HFS+ writer when a new ISO 9660 / HFS+ image gets produced.
+
+Format of Value:
+      BLESSING
+      This is a single byte out of {'p', 'i', 's', '9', 'x'} for
+      ISO_HFSPLUS_BLESS_PPC_BOOTDIR, ISO_HFSPLUS_BLESS_INTEL_BOOTFILE,
+      ISO_HFSPLUS_BLESS_SHOWFOLDER, ISO_HFSPLUS_BLESS_OS9_FOLDER,
+      ISO_HFSPLUS_BLESS_OSX_FOLDER.
+
+Example:
+      { 'p' }
+
+Registered:
+      07 Jun 2012 by Thomas Schmitt for xorriso.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.hx
+
+Purpose:
+      Records the iso_hfsplus_xinfo_data information as defined in libisofs.h.
+      At image load time, this info shall be converted back into an xinfo
+      attachment for iso_hfsplus_xinfo_func so that it is available for
+      the HFS+ writer when a new ISO 9660 / HFS+ image gets produced.
+
+Format of Value:
+      VERSION_LEN | VERSION | CREATOR | TYPE
+      VERSION_LEN complies to ISO 9660 Format section 7.1.1.
+      The byte string VERSION begins with the most significant byte.
+      VERSION == 0 is the only one that is currently defined. It assures the
+      existence of 4 bytes CREATOR and 4 bytes TYPE.
+      Higher versions will keep these 8 bytes and possibly add new ones. 
+
+Example:
+      { 1, 0, 'Y', 'Y', 'D', 'N', 'T', 'E', 'X', 'T' }
+
+Registered:
+      07 Jun 2012 by Thomas Schmitt for xorriso.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.st
+
+Purpose:
+      Records a time point at least 1 second before any nodes were added to a
+      freshly loaded or created ISO image. Nodes in the image which have
+      younger timestamps are suspect to have changed their content during
+      image production and might bear inconsistent content.
+      The RRIP timestamps have a blind second during which a change after
+      node registration would not be recognizable for incremental backups
+      which are based in "isofs.di" rather than on content comparison.
+      This attribute shall eventually be attached to the root directory entry
+      and be global for the whole image.
+
+Format of Value:
+      Shall hold UTC seconds since 1970 as decimal number string without
+      terminating 0-byte.
+
+Example:
+      { '1', '2', '3', '8', '7', '4', '2', '2', '9', '6' }
+
+Registered:
+      03 Apr 2009 by Thomas Schmitt for xorriso.
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+This text is under
+Copyright (c) 2009 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+It shall only be modified in sync with libisofs and other software which
+makes use of AAIP. Please mail change requests to mailing list
+<libburn-hackers@pykix.org> or to the copyright holder in private.
+Only if you cannot reach the copyright holder for at least one month it is
+permissible to modify this text under the same license as the affected
+copy of libisofs.
+If you do so, you commit yourself to taking reasonable effort to stay in
+sync with the other interested users of this text.
+

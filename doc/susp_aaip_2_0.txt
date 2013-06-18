@@ -1,0 +1,457 @@
+
+
+                 Arbitrary Attribute Interchange Protocol
+
+                                Version 2.0
+
+                                Mar 18 2009
+
+                Interchange of Persistent File Attributes
+
+          by Thomas Schmitt    - mailto:scdbackup@gmx.net
+          Libburnia project    - mailto:libburn-hackers@pykix.org
+
+
+AAIP is intended as companion of the Rock Ridge Interchange Protocol RRIP
+which under the general design of System Use Sharing Protocol SUSP extends
+ISO 9660 aka ECMA-119 filesystem semantics to match POSIX needs.
+
+Goal is to have for each file an arbitrary number of attributes which consist
+of two components (Name and Value) of arbitrary length and to have a compact
+representation of ACLs.
+
+This document describes a SUSP entry with Signature Word "AL" which collides
+neither with SUSP 1.12 nor with RRIP 1.12. The AL entry has been designed
+to be as similar to the RRIP entry SL as possible.
+The presence of AAIP shall be announced by a particular ER entry.
+
+Since the size of a SUSP entry is limited to 255, multiple entries may be
+needed to describe one component. The CE mechanism of SUSP shall be used to
+address enough storage if needed.
+
+AL entries and the ER entry of AAIP shall only be present if the ER entry
+of RRIP is present.
+
+-------------------------------------------------------------------------------
+
+System Entries Provided by this Specification
+
+* AL
+
+Description of the "AL" System Use Entry
+
+The entry has exactly the same layout as RRIP entry SL. One has to expect
+more data bytes than with SL, though, and any of the 256 possible byte values. 
+The reader shall be prepared to detect and handle oversized data.
+
+One or more AL entries form the Attribute List of a file object with
+an even number of components. Each two consequtive components form a pair of
+Name and Value.
+
+The empty name indicates that the value is a compact representation of ACLs.
+Names must not contain byte value 0x00. Names which begin by bytes 0x01 to 0x1f
+represent names in particular namespaces. See below: Namespaces.
+The meaning of any other names or name parts is not specified by this document.
+
+All AL entries except the last one shall have the CONTINUE flag set. An AL
+entry with CONTINUE set to 0 indicates the end of the Attribute List.
+
+The format of the AL System Use Field is as follows:
+
+  [1] "BP 1 to BP 2 - Signature Word" shall be (41)(4C) ("AL").
+
+  [2] "BP 3 - Length" shall specify as an 8-bit number the length in bytes of
+      the AL entry recorded according to ISO 9660:7.1.1.
+
+  [3] "BP 4 - System Use Entry Version" shall be 1 as in ISO 9660:7.1.1.
+
+  [4] "BP 5 - Flags" shall contain bit field flags numbered 0 to 7 starting
+      with the least significant bit as follows:
+        0   CONTINUE  This AL entry continues in the next AL entry.
+      All other bits shall be set to 0.
+
+  [5] "BP 6 to Length - Component Area" shall contain Component Records
+      as described below.
+
+  | 'A' | 'L' | LENGTH | 1 | FLAGS | COMPONENT AREA |
+  
+
+Within AL entries each component (Name or Value) shall be recorded as one
+or more component records. If a component does not fit into the remaining
+space of an AL entry then it shall be continued in following AL entries.
+
+All Component Records of a component except the last one shall have the
+CONTINUE flag set. A Component Record with CONTINUE set to 0 indicates the end
+of the component. An eventually following Component Record starts the next
+component.
+
+-------------------------------------------------------------------------------
+
+The Component Record format is identical to the one of the SL entry.
+The complete form of the following summary can be found in RRIP 1.12 "4.1.3.1".
+In case of discrepancies, RRIP 1.12 is the decisive specification. Please
+inform the author of this document if you find such a discrepancy.
+
+Component Records shall be recorded contiguously within each Component Area,
+starting in the first byte of the Component Area. The last Component Record
+in the Component Area of an AL System Use Entry may be continued in the
+Component Area of the next recorded AL System Use Entry in the same
+System Use Area.
+
+Each Component Record shall have the following format:
+
+  [A] "BP 1 - Component Flags" shall contain bit field flags numbered 0 to 7,
+      starting with the least significant bit, as follows:
+        0   CONTINUE  This Component Record continues in the next
+                      AL Component Record.
+        all others are RESERVED and shall be 0.
+
+  [B] "BP 2 - Component Length (LEN_CP)" shall specify as an 8-bit number the
+      number of component bytes in the Component Record. This length shall not
+      include the first two bytes of the Component Record.
+      If any of the bit positions 1-3 is set, the value of this field shall be
+      set to ZERO and no Component Content shall be recorded.
+      This field shall be recorded according to ISO 9660 Format section 7.1.1.
+
+  [C] "BP 3 to 2 + LEN_CP - Component Content" shall contain the component
+      bytes in the Component Record.
+
+  | COMPONENT FLAGS | LEN_CP | COMPONENT BYTES |
+
+
+Example: Two pairs of "name"="long...content" and "one"="more" encoded as
+         two AL entries
+
+  Field 1 contains the Component Record of Name and one Component Record of
+  Value :
+  { 'A', 'L', 255,   1,   1,
+      0,   4, 'n', 'a', 'm', 'e',
+      1, 255, 'l', 'o', 'n', 'g', ... 238 more bytes, 13 go to next AL ... }
+  Field 2 contains the rest of "long...content" and the complete second pair.
+  It marks the end of the Attribute List :
+  { 'A', 'L',  38,   1,   0,
+              ... 13 remaining bytes of the Component Record in first entry ...
+      0,   7, 'c', 'o', 'n', 't', 'e', 'n', 't',
+      0,   3, 'o', 'n', 'e',
+      0,   4, 'm', 'o', 'r', 'e' }
+
+-------------------------------------------------------------------------------
+
+Namespaces
+
+AAIP provides a short notation for namespaces which uses a single non-printable
+byte at the start of the name.
+Reserved start bytes of names are
+    0x01 to 0x1F
+
+The names of extended file attributes are traditionally organized in
+namespaces, which get expressed as first part of an attribute name up to a
+period "." character. It is also tradition that names are printable text,
+single words and especially contain no 0-bytes.
+
+AAIP does not enforce the use of any namespace but it urges that names in the
+following registered namespaces are used according to traditions.
+
+The namespaces "system." and "user." are available with many file system
+types. "system." is file system dependent and often restricted in the
+choice of names. "user." is portable and allows to choose about any name.
+
+Namespace "isofs." is defined for internal use of AAIP enhanced ISO 9660
+file systems. Names in this namespace should be registered at
+libburnia-project.org.
+
+Further namespaces may be registered at libburnia-project.org.
+
+The reserved start bytes of names have the following meaning
+    0x01   escape reserved character at start of name
+    0x02   namespace "system."
+    0x03   namespace "user."
+    0x04   namespace "isofs."
+    0x05   namespace "trusted."
+    0x06   namespace "security."
+    0x07 to 0x1F shall not be used yet.
+
+Examples:
+   Name "user.abc" with and without short notation. Both is allowed.
+      0,   4, 0x03,  'a',  'b',  'c'
+      0    8,  'u',  's',  'e',  'r',  '.',  'a',  'b',  'c'
+
+   Name "\003abc" (if really desired)
+      0,   5, 0x01, 0x03,  'a',  'b',  'c'
+
+-------------------------------------------------------------------------------
+
+Specification of binary ACL representation as special Arbitrary Attribute
+
+The Name component of a binary ACL shall be of length 0.
+
+The Value shall be an arbitrary number of ACL Entries:
+
+  [a] "BP 1 - Entry Flags" shall contain bit field flags numbered 0 to 7,
+      starting with the least significant bit, as follows:
+        0   EXEC      indicates that this entry grants execute permission
+        1   WRITE                                      write permission
+        2   READ                                       read permission
+        3   QUALIFIER indicates that one or more Qualifier Records follow
+        4 - 7  TYPE
+               shall contain the tag type of the ACL entry as four bit code:
+                 0  TRANSLATE      Entry for a global map of name to numeric id
+                                   Qualifier is a record of number and text
+                 1  ACL_USER_OBJ   Permissions of owning user (as of PX entry)
+                 3  ACL_GROUP_OBJ  Permissions of owning group (as of PX entry)
+                 5  ACL_MASK       Restricts 10, 3, and 12 via logical AND
+                 6  ACL_OTHER      Permissions of non-listed, non-owning users
+                 8  SWITCH_MARK    Switch from "access" ACL to "default" ACL
+                10  ACL_USER_N     Permissions of arbitrary user. Qualifier is
+                                   the numeric user id (max. 4 bytes).
+                12  ACL_GROUP_N    Permissions of arbitrary group. Qualifier is
+                                   the numeric group id (max. 4 bytes).
+                15  FUTURE_VERSION  Will indicate that this document
+                                    does not apply to the entry.
+                The other values are reserved. Readers shall ignore them if
+                they are not aware of updates of this document which would
+                assign a meaning to them.
+
+The entries must match the permission bits of the PX entry. This shall obey the
+rule that ACL_USER_OBJ must match S_IRWXU, ACL_OTHER must match S_IRWXO,
+ACL_MASK - if present - must match S_IRWXG, else ACL_GROUP_OBJ must match
+S_IRWXG. If there is ACL_USER_N or ACL_GROUP_N there must also be ACL_MASK.
+
+A numeric qualifier is a binary number of variable length up to 4 bytes. The
+Most Significant Byte comes first. The number shall be the "POSIX File User ID"
+resp. "POSIX File Group ID" as also used in RRIP PX entries. The ids of owning
+user and owning group shall be taken from the PX entry of the file object.
+
+Optional TRANSLATE entries may associate user or group names with numeric
+ids to allow the reading system to remap the numeric ids. See below.
+The writer is not obliged to write them and the reader is not obliged to
+interpret them.
+
+The ACL entries belong to the "access" ACL of a file object. An optional
+SWITCH_MARK entry may direct further entries to the "default" ACL which
+is defined for directory objects. The EXEC bit of SWITCH_MARK shall be 1.
+The bits for WRITE, READ, QUALIFIER shall be 0.
+
+An eventually needed qualifier is stored in one or more Qualifier Records.
+
+  [b] "BP 2 - Qualifier Record Head" shall be present only if QUALIFIER is set
+      to 1. It shall give the number of Qualifier Bytes and eventually
+      indicate that the qualifier continues in a Qualifier Record which comes
+      imediately after this record.
+          0 to 127   Q_LENGTH, the qualifier is complete by this record
+        128 to 255   Q_LENGTH+128, the qualifier is continued by next record
+      So a Qualifier Record can contain at most 127 Qualifier Bytes.
+      This field shall be recorded according to ISO 9660 Format section 7.1.1.
+
+  [c] "BP 3 to BP 2 + Q_LENGTH - Qualifier Bytes" shall be present only if
+      QUALIFIER is set to 1 and hold the announced number of bytes of the
+      user or group name.
+
+  | ENTRY FLAGS [ | QUALIFIER HEAD | QUALIFIER BYTES | ]
+
+ 
+Example: From man 5 acl:  u::rw-,u:lisa:rw-,g::r--,g:toolies:rw-,m::r--,o::r--
+         "lisa" has user number 123, "toolies" has group number 65534
+  { 'A', 'L',  20,   1,   0,
+      0,   0,
+      0,  11, 0x16,
+              0xAE,   1, 123,
+              0x34,
+              0xCE,   2, 255, 254,
+              0x54,
+              0x64 }
+
+Example: "Access" ACL and "default" ACL (0x81 is the switch mark)
+         u::rwx,g::r-x,o::r-x,  du::rwx,dg::r-x,dm::rwx,do::r-x,du:lisa:rwx
+  { 'A', 'L',  20,  1,   0,
+      0,   0,
+      0,  11, 0x17, 0x35, 0x65,
+              0x81,
+              0x17, 0x35, 0x57, 0x65,
+              0xA7,    1, 123 }
+
+-------------------------------------------------------------------------------
+
+Association of Names and Numeric Identifiers
+         
+The entry flag value 0x08 TRANSLATE is not a ACL entry of the hosting object
+but rather a global hint about the relation of roles, names and numeric ids.
+If it is recorded at all, then it shall be recorded with the first Directory
+Entry of the volume's root directory. According to the description of SUSP
+entry ER, this has to be "dot" or (00). Other than with ER, a TRANSLATE entry
+may not appear in the root of directory sub trees.
+
+An interested reader shall examine the Arbitrary Attributes of this Directory
+Entry in order to collect a translation table.
+The advised translation is: PX or AL Id number -> name -> local id number.
+
+The Qualifier Bytes of a TRANSLATE entry shall have the following format:
+
+  [i] "BP 0 - Role" shall tell whether it is about a user name (role 0) or
+      a group name (role 1). Other values are not allowed.
+
+ [ii] "BP 1 to BP 8 - Numeric Id" shall hold the 32 bit POSIX Id number of the
+      entry. This field shall be recorded according to ISO 9660:7.3.3.
+
+[iii] "BP 9 to End Of Qualifier - Name" shall hold the name bytes of this
+      entry.
+
+  | ROLE | NUMERIC ID | NAME |
+
+Example: User id number 123 gets associated with user name "lisa"
+
+               0x08,  13,  0,  123,0,0,0,   0,0,0,123,  'l', 'i', 's', 'a',
+
+
+Example: A very long qualifier naming "His_Excellency_..._the_Boss" as user #1.
+         This needs two qualifier records.
+               0x08, 255,   0,   1,0,0,0,   0,0,0,1,
+                          'H', 'i', 's', '_', 'E', 'x', 'c', 'e', 'l', 'e',
+                                     ... 108 more bytes ...
+                       8, 't', 'h', 'e', '_', 'B', 'o', 's', 's', 
+
+-------------------------------------------------------------------------------
+
+Specification of the ER System Use Entry Values for AAIP:
+
+This ER system entry shall only be present if the ER entry of RRIP is present.
+To be compliant with SUSP-1.12, this ER entry must be present if AL entries
+are present, and ES entries have to mark RRIP and AAIP entries.
+If for some reason compliance with SUSP-1.10 is intended, then this ER entry
+and the ES entries must not be present, although SUSP-1.10 would allow ER.
+(See below: Compatibility considerations.)
+
+The Extension Version number for this version of AAIP shall be 1.
+
+The Extension Identifier field shall be "AAIP_0200" with Identifier Length 9.
+
+The mandatory content form of the Extension Descriptor is 
+"AL PROVIDES VIA AAIP 2.0 SUPPORT FOR ARBITRARY FILE ATTRIBUTES IN ISO 9660 IMAGES"
+The Description Length is 81.
+
+The recommended content of the Extension Source is
+"PLEASE CONTACT THE LIBBURNIA PROJECT VIA LIBBURNIA-PROJECT.ORG".
+The corresponding Source Length is 62.
+
+-------------------------------------------------------------------------------
+
+                        Compatibility Considerations
+
+This extension is supposed not to disturb any reader system which complies
+to SUSP-1.10:
+"6.2 Requirements for a Receiving System
+ [...]
+ Any System Use Field which the receiving system does not recognize
+ is to be ignored and skipped."
+
+SUSP-1.12 extends this prescription by:
+"Any System Use Entry, with the exception of the set of System Use Entries
+ defined in this document, following an "ES" System Use Entry that indicates
+ an extension specification which the receiving system does not recognize
+ shall be ignored and skipped."
+
+According to SUSP-1.12 the ER entry is mandatory for a conformant extension.
+It also prescribes that in the case that ER entries of RRIP and AAIP are 
+present, then ES entries shall be used to separate RRIP entries from AAIP
+entries.
+SUSP-1.12 frowns on extensions which are not announced by ER. Nevertheless
+is does not totally outrule them.
+
+SUSP-1.10 does not specify ES entries at all and allows to have extension
+entries without announcing them by an ER entry. So if a second ER entry is
+not bearable, then the SUSP-1.10 downgrade of AAIP allows to omit the
+AAIP ER and the ES entries. But if there is the AAIP ER then there must be ES
+at the appropriate places. Else the format would explicitely violate SUSP-1.12.
+
+-------------------------------------------------------------------------------
+Model Relations:
+
+  Attribute List ------------- [1:0..1] ------------- ACL
+  [1:0..n]                                            [1:0..n] 
+  Arbitrary Attribute ( [1:0..1] ACL )                Entry
+  [1:2..2n]                                           [1:0..1]
+  Component  ( [1..m:1..n] AL Field )                 Qualifier
+  [1:1..n]                                            <<  one of >>
+  Component Record                                  /              \
+  [1..m:1..n]                              Translation Entry ,  Numeric Id
+  AL Field                                         |                 |
+                                                 [1:1..n]          [1:1]
+                                                     \              /
+                                                      Qualifier Record
+
+-------------------------------------------------------------------------------
+Revoked drafts:
+
+The following outdated versions may be interpreted at read time but they
+shall not be written any more.
+
+                                    AAIP-1.0
+
+Previous versions up to AAIP 1.0 used field signature "AA" rather than "AL".
+This nearly collides with "Apple ISO 9660 Extensions". The Apple "AA" field of
+version 1 has a length of 7, whereas the shortest first AAIP field "AA" had
+length 9.
+
+Beginning with AAIP 2.0, the field name has been changed to "AL".
+If a reader interprets old AAIP "AA" fields, then it must take precautions to
+distinguish them from Apple "AA" fields. But it is well compliant with AAIP 2.0
+to just ignore any kind of "AA" fields.
+
+AAIP 1.0 had ER signature "AAIP_0100".
+
+                                    AAIP-0.2
+
+AAIP 0.2 with ER signature "AAIP_0002" allowed to announce and use a different
+signature than "AA". This was revoked because ES entries serve the purpose
+to distinguish AAIP entries from eventual "AA" entries of any other extension.
+Regrettably no reader (kernel) was found which neatly interprets ES. Many do
+not even recognize the RRIP-1.12 ER signatures "IEEE_P1282", "IEEE_1282".
+
+AAIP 0.2 defined two ACL types which did not make it into AAIP 1.0
+                 2  ACL_USER       of arbitrary user, with name as qualifier
+                 4  ACL_GROUP      of arbitrary group, with name as qualifier
+Their job was transferred to ACL_USER_N and ACL_GROUP_N which have numeric
+qualifiers.
+
+                                    AAIP-0.0
+
+There was a draft AAIP 0.0 with ER signature "AAIP_2008A". It did not resemble
+the existing entry SL and was never implemented.
+
+-------------------------------------------------------------------------------
+References:
+
+ECMA-119 aka ISO 9660
+  http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-119.pdf
+
+SUSP 1.12 (entries CE , PD , SP , ST , ER , ES)
+  ftp://ftp.ymi.com/pub/rockridge/susp112.ps
+
+RRIP 1.12 (entries PX , PN , SL , NM , CL , PL , RE , TF , SF , obsolete: RR)
+  ftp://ftp.ymi.com/pub/rockridge/rrip112.ps
+
+Apple ISO 9660 Extensions (entries AA and BA)
+  http://developer.apple.com/technotes/fl/fl_36.html
+
+Amiga AS entry
+  http://www.estamos.de/makecd/Rock_Ridge_Amiga_Specific
+
+zisofs entry ZF (prepared by zisofs-tools, written by mkisofs)
+  http://freshmeat.net/projects/zisofs-tools/
+
+Program mkisofs emits entry XA
+  ftp://ftp.berlios.de/pub/cdrecord/alpha
+
+-------------------------------------------------------------------------------
+
+This text is under
+Copyright (c) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+It shall only be modified in sync with libisofs and other software which
+makes use of AAIP. Please mail change requests to mailing list
+<libburn-hackers@pykix.org> or to the copyright holder in private.
+Only if you cannot reach the copyright holder for at least one month it is
+permissible to modify this text under the same license as the affected
+copy of libisofs.
+If you do so, you commit yourself to taking reasonable effort to stay in 
+sync with the other interested users of this text.
+

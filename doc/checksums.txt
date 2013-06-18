@@ -1,0 +1,320 @@
+
+                    Description of libisofs MD5 checksumming
+
+               by Thomas Schmitt    - mailto:scdbackup@gmx.net
+               Libburnia project    - mailto:libburn-hackers@pykix.org
+                                 26 Aug 2009
+
+
+MD5 is a 128 bit message digest with a very low probability to be the same for
+any pair of differing data files. It is described in RFC 1321. and can be
+computed e.g. by program md5sum.
+
+libisofs can equip its images with MD5 checksums for superblock, directory
+tree, the whole session, and for each single data file.
+See libisofs.h, iso_write_opts_set_record_md5().
+
+The data file checksums get loaded together with the directory tree if this
+is enabled by iso_read_opts_set_no_md5(). Loaded checksums can be inquired by
+iso_image_get_session_md5() and iso_file_get_md5().
+
+Stream recognizable checksum tags occupy exactly one block each. They can
+be detected by submitting a block to iso_util_decode_md5_tag(). 
+
+libisofs has own MD5 computation functions:
+iso_md5_start(), iso_md5_compute(), iso_md5_clone(), iso_md5_end(),
+iso_md5_match()
+
+
+                          Representation in the Image
+
+There may be several stream recognizable checksum tags and a compact array
+of MD5 items at the end of the session. The latter allows to quickly load many
+file checksums from media with slow random access.
+
+
+                              The Checksum Array
+
+Location and layout of the checksum array is recorded as AAIP attribute
+"isofs.ca" of the root node.
+See doc/susp_aaip_2_0.txt for a general description of AAIP and
+doc/susp_aaip_isofs_names.txt for the layout of "isofs.ca".
+
+The single data files hold an index to their MD5 checksum in individual AAIP
+attributes "isofs.cx". Index I means: array base address + 16 * I. 
+
+If there are N checksummed data files then the array consists of N + 2 entries
+with 16 bytes each.
+
+Entry number 0 holds a session checksum which covers the range from the session
+start block up to (but not including) the start block of the checksum area.
+This range is described by attribute "isofs.ca" of the root node.
+
+Entries 1 to N hold the checksums of individual data files.
+
+Entry number N + 1 holds the MD5 checksum of entries 0 to N.
+
+
+                             The Checksum Tags
+
+Because the inquiry of AAIP attributes demands loading of the image tree,
+there are also checksum tags which can be detected on the fly when reading
+and checksumming the session from its start point as learned from a media
+table-of-content. 
+
+The superblock checksum tag is written after the ECMA-119 volume descriptors.
+The tree checksum tag is written after the  ECMA-119 directory entries.
+The session checksum tag is written after all payload including the checksum
+array. (Then follows eventual padding.)
+
+The tags are single lines of printable text at the very beginning of a block
+of 2048 bytes. They have the following format:
+
+ Tag_id pos=# range_start=# range_size=# [session_start|next=#] md5=# self=#\n
+
+Tag_id distinguishes the following tag types
+  "libisofs_rlsb32_checksum_tag_v1"     Relocated 64 kB superblock tag
+  "libisofs_sb_checksum_tag_v1"         Superblock tag
+  "libisofs_tree_checksum_tag_v1"       Directory tree tag
+  "libisofs_checksum_tag_v1"            Session tag
+
+A relocated superblock may appear at LBA 0 of an image which was produced for
+being stored in a disk file or on overwriteable media (e.g. DVD+RW, BD-RE).
+Typically there is a first session recorded with a superblock at LBA 32 and
+the next session may follow shortly after its session tag. (Typically at the
+next block address which is divisible by 32.) Normally no session starts after 
+the address given by parameter session_start=.
+
+Session oriented media like CD-R[W], DVD+R, BD-R will have no relocated
+superblock but rather bear a table-of-content on media level (to be inquired
+by MMC commands).
+
+
+Example:
+A relocated superblock which points to the last session. Then the first session
+which starts at Logical Block Address 32. The following sessions have the same
+structure as the first one.
+
+LBA 0:
+   <... ECMA-119 System Area and Volume Descriptors ...>
+LBA 18:
+   libisofs_rlsb32_checksum_tag_v1 pos=18 range_start=0 range_size=18 session_start=311936 md5=6fd252d5b1db52b3c5193447081820e4 self=526f7a3c7fefce09754275c6b924b6d9
+   <... padding up to LBA 32 ...>
+LBA 32:
+   <... First Session: ECMA-119 System Area and Volume Descriptors ...>
+   libisofs_sb_checksum_tag_v1 pos=50 range_start=32 range_size=18 md5=17471035f1360a69eedbd1d0c67a6aa2 self=52d602210883eeababfc9cd287e28682
+   <... ECMA-119 Directory Entries (the tree of file names) ...>
+LBA 334:
+   libisofs_tree_checksum_tag_v1 pos=334 range_start=32 range_size=302 md5=41acd50285339be5318decce39834a45 self=fe100c338c8f9a494a5432b5bfe6bf3c
+   <... Data file payload and checksum array ...>
+LBA 81554:
+   libisofs_checksum_tag_v1 pos=81554 range_start=32 range_size=81522 md5=8adb404bdf7f5c0a078873bb129ee5b9 self=57c2c2192822b658240d62cbc88270cb
+
+   <... more sessions ...>
+
+LBA 311936:
+   <... Last Session: ECMA-119 System Area and Volume Descriptors ...>
+LBA 311954:
+   libisofs_sb_checksum_tag_v1 pos=311954 range_start=311936 range_size=18 next=312286 md5=7f1586e02ac962432dc859a4ae166027 self=2c5fce263cd0ca6984699060f6253e62
+   <... Last Session: tree, tree checksum tag, data payload, session tag ...>
+
+
+There are several tag parameters. Addresses are given as decimal numbers, MD5
+checksums as strings of 32 hex digits.
+
+  pos=
+  gives the block address where the tag supposes itself to be stored.
+  If this does not match the block address where the tag is found then this
+  either indicates that the tag is payload of the image or that the image has
+  been relocated. (The latter makes the image unusable.)
+
+  range_start=
+  The block address where the session is supposed to start. If this does not
+  match the session start on media then the volume descriptors of the
+  image have been relocated. (This can happen with overwriteable media. If
+  checksumming started at LBA 0 and finds range_start=32, then one has to
+  restart checksumming at LBA 32. See libburn/doc/cookbook.txt
+  "ISO 9660 multi-session emulation on overwriteable media" for background
+  information.)
+
+  range_size=
+  The number of blocks beginning at range_start which are covered by the
+  checksum of the tag.  
+
+  Only with superblock tag and tree tag:
+  next=
+  The block address where the next tag is supposed to be found. This is
+  to avoid the small possibility that a checksum tag with matching position
+  is part of a directory entry or data file. The superblock tag is quite
+  uniquely placed directly after the ECMA-119 Volume Descriptor Set Terminator
+  where no such cleartext is supposed to reside by accident.
+
+  Only with relocated 64 kB superblock tag:
+  session_start=
+  The start block address (System Area) of the session to which the relocated
+  superblock points.  
+
+  md5=
+  The checksum payload of the tag as lower case hex digits.
+
+  self=
+  The MD5 checksum of the tag itself up to and including the last hex digit of
+  parameter "md5=".
+  
+The newline character at the end is mandatory. After that newline there may
+follow more lines. Their meaning is not necessarily described in this document.
+
+One such line type is the scdbackup checksum tag, an ancestor of libisofs tags
+which is suitable only for single session images which begin at LBA 0. It bears
+a checksum record which by its MD5 covers all bytes from LBA 0 up to the
+newline character preceding the scdbackup tag. See scdbackup/README appendix
+VERIFY for details.
+
+-------------------------------------------------------------------------------
+
+                              Usage at Read Time
+
+                     Checking Before Image Tree Loading
+
+In order to check for a trustworthy loadable image tree, read the first 32
+blocks from to the session start and look in block 16 to 32 for a superblock
+checksum tag by
+  iso_util_decode_md5_tag(block, &tag_type, &pos,
+                          &range_start, &range_size, &next_tag, md5, 0);
+
+If a tag of type 2 or 4 appears and has plausible parameters, then check
+whether its MD5 matches the MD5 of the data blocks which were read before.
+
+With tag type 2:
+
+Keep the original MD5 context of the data blocks and clone one for obtaining
+the MD5 bytes.
+If the MD5s match, then compute the checksum block and all folowing ones into
+the kept MD5 context and go on with reading and computing for the tree checksum
+tag. This will be found at block address next_tag, verified and parsed by:
+  iso_util_decode_md5_tag(block, &tag_type, &pos,
+                          &range_start, &range_size, &next_tag, md5, 3);
+
+Again, if the parameters match the reading state, the MD5 must match the
+MD5 computed from the data blocks which were before.
+If so, then the tree is ok and safe to be loaded by iso_image_import().
+
+With tag type 4:
+
+End the MD5 context and start a new context for the session which you will
+read next.
+
+Then look for the actual session by starting to read at the address given by
+parameter session_start= which is returned by iso_util_decode_md5_tag() as
+next_tag. Go on by looking for tag type 2 and follow above prescription.
+
+
+                      Checking the Data Part of the Session
+
+In order to check the trustworthyness of a whole session, continue reading
+and checksumming after the tree was verified. 
+
+Read and checksum the blocks. When reaching block address next_tag (from the
+tree tag) submit this block to
+
+  iso_util_decode_md5_tag(block, &tag_type, &pos,
+                          &range_start, &range_size, &next_tag, md5, 1);
+
+If this returns 1, then check whether the returned parameters pos, range_start,
+and range_size match the state of block reading, and whether the returned
+bytes in parameter md5 match the MD5 computed from the data blocks which were
+read before the tag block.
+
+
+                           Checking All Sessions
+
+If the media is sequentially recordable, obtain a table of content and check
+the first track of each session as prescribed above in Checking Before Image
+Tree Loading and in Checking the Data Part of the Session.
+
+With disk files or overwriteable media, look for a relocated superblock tag
+but do not hop to address next_tag (given by session_start=). Instead look at
+LBA 32 for the first session and check it as prescribed above.
+After reaching its end, round up the read address to the next multiple of 32
+and check whether it is smaller than session_start= from the super block.
+If so, expect another session to start there.
+
+
+                   Checking Single Files in a Loaded Image
+
+An image may consist of many sessions wherein many data blocks may not belong
+to files in the directory tree of the most recent session. Checking this
+tree and all its data files can ensure that all actually valid data in the
+image are trustworthy. This will leave out the trees of the older sessions
+and the obsolete data blocks of overwritten or deleted files.
+
+Once the image has been loaded, you can obtain MD5 sums from IsoNode objects
+which fulfill
+  iso_node_get_type(node) == LIBISO_FILE
+
+The recorded checksum can be obtained by
+  iso_file_get_md5(image, (IsoFile *) node, md5, 0);
+
+For accessing the file data in the loaded image use 
+  iso_file_get_stream((IsoFile *) node);
+to get the data stream of the object.
+The checksums cover the data content as it was actually written into the ISO
+image stream, not necessarily as it was on hard disk before or afterwards.
+This implies that content filtered files bear the MD5 of the filtered data
+and not of the original files on disk. When checkreading, one has to avoid
+any reverse filtering. Dig out the stream which directly reads image data
+by calling iso_stream_get_input_stream() until it returns NULL and use
+iso_stream_get_size() rather than iso_file_get_size().
+
+Now you may call iso_stream_open(), iso_stream_read(), iso_stream_close()
+for reading file content from the loaded image.
+
+
+                        Session Check in a Loaded Image
+
+iso_image_get_session_md5() gives start LBA and session payload size as of
+"isofs.ca" and the session checksum as of the checksum array.
+
+For reading you may use the IsoDataSource object which you submitted
+to iso_image_import() when reading the image. If this source is associated
+to a libburn drive, then libburn function burn_read_data() can read directly
+from it.
+
+-------------------------------------------------------------------------------
+
+                            scdbackup Checksum Tags
+
+The session checksum tag does not occupy its whole block. So there is room to
+store a scdbackup stream checksum tag, which is an ancestor format of the tags
+described here. This feature allows scdbackup to omit its own checksum filter
+if using xorriso as ISO 9660 formatter program.
+Such a tag makes only sense if the session begins at LBA 0.
+
+See scdbackup-*/README, appendix VERIFY for a specification.
+
+Example of a scdbackup checksum tag:
+scdbackup_checksum_tag_v0.1 2456606865 61 2_2 B00109.143415 2456606865 485bbef110870c45754d7adcc844a72c c2355d5ea3c94d792ff5893dfe0d6d7b
+
+The tag is located at byte position 2456606865, contains 61 bytes of scdbackup
+checksum record (the next four words):
+Name of the backup volume is "2_2".
+Written in year B0 = 2010 (A9 = 2009, B1 = 2011), January (01), 9th (09),
+14:34:15 local time. 
+The size of the volume is 2456606865 bytes, which have a MD5 sum of
+485bbef110870c45754d7adcc844a72c.
+The checksum of "2_2 B00109.143415 2456606865 485bbef110870c45754d7adcc844a72c"
+is c2355d5ea3c94d792ff5893dfe0d6d7b.
+
+-------------------------------------------------------------------------------
+
+This text is under
+Copyright (c) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+It shall only be modified in sync with libisofs and other software which
+makes use of libisofs checksums. Please mail change requests to mailing list
+<libburn-hackers@pykix.org> or to the copyright holder in private.
+Only if you cannot reach the copyright holder for at least one month it is
+permissible to modify this text under the same license as the affected
+copy of libisofs.
+If you do so, you commit yourself to taking reasonable effort to stay in 
+sync with the other interested users of this text.
+

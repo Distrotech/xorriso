@@ -1,0 +1,288 @@
+#!/bin/bash
+
+# Copyright 2011 Thomas Schmitt <scdbackup@gmx.net>
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Licensed under GNU GPL version 2 or later
+
+set -e
+
+not_in_releng_exit() {
+  printf "\nPlease execute the tests from releng directory.\n\n"
+  exit 1
+}
+
+. inc/releng_getopts.inc || not_in_releng_exit
+
+print_specific_help() {
+cat << HLP
+Specific options:
+       none yet.
+Overview:
+       Match the resulting ISO image representation
+       against the jigdo representation.
+HLP
+}
+
+if test "$SPECIFIC_HELP" = 1; then
+  print_specific_help
+  exit 0
+fi
+
+if [ ! -x $RELENG_XORRISO ]; then
+ print_help
+ printf "\n${SELF}: -x  absolute or relative path to binary to be run.\n\n"
+ exit 30
+fi
+
+# check data dir, if any and after checking -x xorriso
+if [ -d "${GEN_DATA_DIR}" ]; then
+ printf "\n${SELF}: directory %s exists!" ${GEN_DATA_DIR}
+ printf "\n${SELF}: use './${SELF} -c' to remove.\n"
+ exit 1
+else
+ mkdir "${GEN_DATA_DIR}"
+fi
+
+TMP_DATA_DIR=releng_generated_data
+IMG_EXTRACT_DIR=${GEN_DATA_DIR}/${SELF}_extracted_tree
+RELENG_DIR="${IMG_EXTRACT_DIR}"
+RELENG_ISOLINUX_BIN="isolinux/isolinux.bin"
+RELENG_BOOT_CAT="isolinux/boot.cat"
+RELENG_IMG=t1
+RES=""
+REMOTE_URL="http://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/i386/iso-cd"
+REMOTE_IMG="debian-testing-i386-netinst.iso"
+
+# check for required items
+if [ "${RELENG_XORRISO}" = "" -o "${RELENG_DIR}" = "" -o "${RELENG_IMG}" = "" ]; then
+ echo -e "\n${SELF}: xorriso_cmd IN_dir and OUT_image are required\n"
+ exit 2
+fi
+
+# All must be set at this point
+printf "${SELF}: Config items:"
+printf "\n\txorriso_cmd=${RELENG_XORRISO}\n\tIN_dir=${RELENG_DIR}\n\tOUT_image=${RELENG_IMG}.iso"
+printf "\n\tIN_isolinux=${RELENG_ISOLINUX_BIN}\n\tOUT_bootcat=${RELENG_BOOT_CAT}\n"
+RES="${RELENG_IMG}.iso ${RELENG_IMG}.new ${RELENG_IMG}.md5 ${RELENG_IMG}.jigdo ${RELENG_IMG}.template"
+
+# xorriso version details, incl. underlying libraries
+# "${RELENG_XORRISO}" -version
+
+# check whether the binary support JTE
+set +e
+RETSTR_VER_JTE=`"${RELENG_XORRISO}" --version 2>/dev/null | grep "libjte * in use"`
+RETCODE_VER_JTE="$?"
+set -e
+case ${RETCODE_VER_JTE} in
+     0)
+       printf "\n${SELF}: Found JTE support with ${RELENG_XORRISO} : ${RETSTR_VER_JTE}"
+       ;;
+     *)
+       printf "\nFAIL : ${SELF} : Not found JTE support in ${RELENG_XORRISO}. Quit."
+       printf "\n${SELF}: JTE not supported with this xorriso build. Install jigit >=1.18 and rebuild."
+       printf "\n${SELF}: http://www.einval.com/~steve/software/JTE/\n"
+       cleanup
+       exit 4
+       ;;
+esac
+
+# grab remote ISO image, to decompose
+if [ ! -f "${TMP_DATA_DIR}"/"${REMOTE_IMG}" ]; then
+ printf "\n${SELF}: Downloading ${REMOTE_URL}/${REMOTE_IMG}\n"
+ if wget -V >/dev/null 2>&1
+ then
+   set +e
+   wget --no-check-certificate -T20 -t3 \
+        -O "${TMP_DATA_DIR}"/"${REMOTE_IMG}" "${REMOTE_URL}"/"${REMOTE_IMG}"
+   WGET_RET="$?"
+   set -e
+ elif fetch -T 20 -o "${TMP_DATA_DIR}"/"${REMOTE_IMG}" \
+            "${REMOTE_URL}"/"${REMOTE_IMG}"
+ then
+   WGET_RET=0
+ else
+   echo
+   echo "FAIL: ${SELF} : Neither wget nor fetch are present and willing to work"
+   cleanup
+   exit 10
+ fi
+ case ${WGET_RET} in
+     0)
+      echo -e "\n${SELF}: Downloading successfully completed.\n"
+     ;;
+     *)
+      echo -e "\nFAIL : ${SELF} : wget returned code: $WGET_RET\n"
+      rm "${TMP_DATA_DIR}"/"${REMOTE_IMG}"
+      cleanup
+      exit 5
+     ;;
+ esac
+else
+ printf "\n${SELF}: Found ISO image: ${TMP_DATA_DIR}/${REMOTE_IMG}\n"
+fi
+
+# check for extraction directory existence
+if [ -d "${IMG_EXTRACT_DIR}" ]; then
+ printf "\n${SELF}: Found ${IMG_EXTRACT_DIR}. Please cleanup.\n"
+ cleanup
+ exit 6
+else
+ mkdir "${IMG_EXTRACT_DIR}"
+fi
+
+# extract image content
+CMD_EXTRACT="${RELENG_XORRISO} -indev ${TMP_DATA_DIR}/${REMOTE_IMG} \
+        -osirrox on:auto_chmod_on \
+	-extract / ${IMG_EXTRACT_DIR} \
+"
+
+# TODO: drop set +e|-e block, catch exit code instead when 
+#       the boot catalog warnings get completely resolved.
+echo -e "${SELF}: Extracting ISO image:\n${CMD_EXTRACT}\n"
+set +e
+${CMD_EXTRACT}
+set -e
+
+# grab an MBR
+ISOHYBRID_MBR="${GEN_DATA_DIR}/isohybrid.mbr"
+dd if="${TMP_DATA_DIR}/${REMOTE_IMG}" bs=1K count=32 of="${ISOHYBRID_MBR}"
+
+# create FAT partition
+APPEND_PART="${GEN_DATA_DIR}/fatpart.fat"
+MKFS_MSDOS="/sbin/mkfs.msdos"
+if [ -x "${MKFS_MSDOS}" ]; then
+ "${MKFS_MSDOS}" -n Bla -C "${APPEND_PART}" 8192
+ APPEND_PART_CMD="-append_partition 2 0x01 ${APPEND_PART}"
+else
+ APPEND_PART_CMD=
+
+#  printf "\nFAIL : ${SELF} : Not found: ${MKFS_MSDOS}"
+#  printf "\n${SELF}: Not found: "${MKFS_MSDOS}". Install dosfstools."
+#  printf "\n${SELF}: http://www.daniel-baumann.ch/software/dosfstools/\n"
+#  cleanup
+#  exit 7
+fi
+
+# GENERAL section
+CMD="${RELENG_XORRISO} \
+ -as mkisofs \
+ -quiet \
+ -o ${GEN_DATA_DIR}/${RELENG_IMG}.iso \
+ -R \
+ -V ISOJIGDO \
+ -partition_offset 16 \
+ -J -joliet-long \
+"
+
+# BOOT section
+if [ -f "${IMG_EXTRACT_DIR}"/"${RELENG_ISOLINUX_BIN}" -a -f "${ISOHYBRID_MBR}" ]
+then
+CMD="$CMD \
+ -b ${RELENG_ISOLINUX_BIN} \
+ -c ${RELENG_BOOT_CAT} \
+ -no-emul-boot -boot-load-size 4 -boot-info-table \
+ -isohybrid-mbr ${ISOHYBRID_MBR} \
+ -partition_offset 16 \
+"
+else
+ printf "\n${SELF}: FAIL to compose the boot section.\n"
+ cleanup
+ exit 8
+fi
+if [ -n "${APPEND_PART_CMD}" -a -f "${APPEND_PART}" ]; then
+CMD="$CMD \
+ ${APPEND_PART_CMD} 
+"
+fi
+
+# JIGDO section
+JIGDO_JIGDO=${GEN_DATA_DIR}/${RELENG_IMG}.jigdo
+JIGDO_TEMPLATE=${GEN_DATA_DIR}/${RELENG_IMG}.template
+
+JIGDO_MAP_RHV=$(cd ${RELENG_DIR} 2>/dev/null && pwd)
+
+JIGDO_MAP="Debian=${JIGDO_MAP_RHV}/"
+
+# create jigdo MD5 list in base64 format
+JIGDO_GEN_MD5=${GEN_DATA_DIR}/${RELENG_IMG}.md5
+
+printf "${SELF}: Creating MD5 list in hex format in ${JIGDO_GEN_MD5}..."
+set +e
+./jigdo-gen-md5-list ${RELENG_DIR} > ${JIGDO_GEN_MD5}
+ret=$?
+set -e
+
+if test "$ret" = 0
+then
+  printf "Done.\n"
+else
+  printf "\nFAIL : ${SELF}: ./jigdo-gen-md5-list returns $ret"
+  cleanup
+  exit 9
+fi
+ 
+
+CMD="$CMD \
+ -jigdo-template-compress gzip \
+ -checksum_algorithm_iso md5,sha1,sha256,sha512 \
+ -checksum_algorithm_template md5,sha1,sha256,sha512 \
+ -jigdo-jigdo ${JIGDO_JIGDO} \
+ -jigdo-template ${JIGDO_TEMPLATE} \
+ -jigdo-map ${JIGDO_MAP} \
+ -md5-list ${JIGDO_GEN_MD5} \
+ -jigdo-min-file-size 1024 \
+"
+
+CMD="$CMD ${RELENG_DIR}"
+
+# Run the whole compound command
+echo -e "${SELF}: Creating ISO and jigdo representations:\n$CMD\n"
+${CMD}
+
+# Create another imange this time from jigdo files
+if which jigit-mkimage >/dev/null 2>&1; then
+ printf "${SELF}: Creating new ISO from jigdo files..."
+ jigit-mkimage \
+  -t ${JIGDO_TEMPLATE} \
+  -j ${JIGDO_JIGDO} \
+  -m ${JIGDO_MAP} \
+  -o ${GEN_DATA_DIR}/${RELENG_IMG}.new
+ printf "Done.\n"
+else
+ printf "\n${SELF}: Not found: jigit-mkimage. Install jigit."
+ printf "\n${SELF}: http://www.einval.com/~steve/software/JTE/\n"
+ cleanup
+ exit 10
+fi
+
+# trap the exit code of diff and let the Universe explode
+diff ${GEN_DATA_DIR}/${RELENG_IMG}.iso ${GEN_DATA_DIR}/${RELENG_IMG}.new
+DIFF_RET="$?"
+case ${DIFF_RET} in
+     0)
+      echo -e "${SELF}: Match: diff ${GEN_DATA_DIR}/${RELENG_IMG}.iso ${GEN_DATA_DIR}/${RELENG_IMG}.new"
+     ;;
+     *)
+      echo -e "FAIL : ${SELF} : diff returned code: $DIFF_RET\n"
+     ;;
+esac
+
+# sort out the cruft
+cleanup
+
+# warn about downloaded image left behind
+if [ -f "${TMP_DATA_DIR}"/"${REMOTE_IMG}" ]; then
+ printf "${SELF}: Leaving "
+ ls -sh "${TMP_DATA_DIR}"/"${REMOTE_IMG}"
+fi
+
+# last hints
+if [ -d ${GEN_DATA_DIR} ]; then
+ printf "\n${SELF}: HINT: manual checks remained to be done:\n"
+ printf " * ${GEN_DATA_DIR}/${RELENG_IMG}.iso boots from USB stick and/or optical media.\n"
+ printf " * appended FAT partition is mountable.\n"
+ printf " * xorriso -indev ${GEN_DATA_DIR}/${RELENG_IMG}.iso -pvd_info\n"
+ printf " * fdisk -lu ${GEN_DATA_DIR}/${RELENG_IMG}.iso\n"
+fi
+
+exit 0

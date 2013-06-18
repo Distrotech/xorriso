@@ -1,0 +1,168 @@
+/* config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define this if eaccess function is available */
+#undef HAVE_EACCESS
+
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#undef HAVE_FSEEKO
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `acl' library (-lacl). */
+#undef HAVE_LIBACL
+
+/* Define to 1 if you have the `bz2' library (-lbz2). */
+#undef HAVE_LIBBZ2
+
+/* Define to 1 if you have the `cdio' library (-lcdio). */
+#undef HAVE_LIBCDIO
+
+/* Define to 1 if you have the `iconv' library (-liconv). */
+#undef HAVE_LIBICONV
+
+/* Define to 1 if you have the `readline' library (-lreadline). */
+#undef HAVE_LIBREADLINE
+
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define this if timegm function is available */
+#undef HAVE_TIMEGM
+
+/* Define this if tm structure includes a tm_gmtoff entry. */
+#undef HAVE_TM_GMTOFF
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Whether to apply const qualifier to iconv inbuf */
+#undef ICONV_CONST
+
+/* Define to use libbz2 by built-in libjte */
+#undef LIBJTE_WITH_LIBBZ2
+
+/* Allow libjte to use zlib */
+#undef LIBJTE_WITH_ZLIB
+
+/* Define to use statvfs() with libburn stdio */
+#undef Libburn_os_has_statvfS
+
+/* Define to use O_DIRECT with -as cdrskin */
+#undef Libburn_read_o_direcT
+
+/* Define to use libcdio as system adapter */
+#undef Libburn_use_libcdiO
+
+/* Define to use ACL capabilities */
+#undef Libisofs_with_aaip_acL
+
+/* Define to use xattr capabilities */
+#undef Libisofs_with_aaip_xattR
+
+/* Define to use extattr capabilities */
+#undef Libisofs_with_freebsd_extattR
+
+/* Define to use Jigdo Template Extraction via libjte */
+#undef Libisofs_with_libjtE
+
+/* Define to use compression via zlib */
+#undef Libisofs_with_zliB
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to use multi-threading in built-in libjte */
+#undef THREADED_CHECKSUMS
+
+/* Version number of package */
+#undef VERSION
+
+/* Define to 1 if your processor stores words with the most significant byte
+   first (like Motorola and SPARC, unlike Intel and VAX). */
+#undef WORDS_BIGENDIAN
+
+/* Define to allow xorriso to start external filter processes */
+#undef Xorriso_allow_external_filterS
+
+/* Define to allow xorriso command -launch_frontend when running under setuid
+   */
+#undef Xorriso_allow_extf_suiD
+
+/* Define to allow xorriso command -launch_frontend */
+#undef Xorriso_allow_launch_frontenD
+
+/* Define to make 64 KB default size for DVD/BD writing */
+#undef Xorriso_dvd_obs_default_64K
+
+/* Define to prepare sources for statically linked xorriso */
+#undef Xorriso_standalonE
+
+/* Define to use Jigdo Template Extraction via libjte */
+#undef Xorriso_with_libjtE
+
+/* Define to use libreadline */
+#undef Xorriso_with_readlinE
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#undef _LARGEFILE_SOURCE
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif

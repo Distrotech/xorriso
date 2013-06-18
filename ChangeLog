@@ -1,0 +1,610 @@
+libisoburn-1.3.0.tar.gz  Fri May 17 2013
+===============================================================================
+* Bug fix: Disk paths with components '.' or '..' could be mistaken for
+           directories.
+* Bug fix: -as mkisofs -print-size failed with -isohybrid-mbr and a single
+           boot image. Regression introduced by libisoburn-1.2.8.
+* Bug fix: -as mkisofs -path-list did not switch to --no-emul-toc by default.
+* Bug fix: Unspecified Expiration Time and Effective Time of ISO volume was
+           represented by 0-bytes rather than ASCII '0' digits.
+* Bug fix: Reserved and unused fields of APM entries were not zeroed.
+* Bug fix: GPT header CRC was computed from all 512 bytes rather than from 92.
+* Bug fix: The protective MBR partition for GPT started at block 0 instead of 1.
+* New -boot_image bootspecs grub2_mbr= and grub2_boot_info=
+* New -boot_image bootspec grub2_sparc_core=
+* New -as mkisofs options --grub2-mbr , --grub2-boot-info , --grub2-sparc-core
+* New -hardlinks mode "lsl_count" / "no_lsl_count"
+
+libisoburn-1.2.8.tar.gz  Mon Mar 18 2013
+===============================================================================
+* Bug fix: -tell_media_space altered the pointers to MD5 of data files
+           which stem from a previous session. This produced false
+           mismatches with -check_md5_r.
+* Bug fix: CD tracks were reported with the sizes of the tracks in the 
+           first session.
+* Bug fix: -check_media use=outdev sector_map= stored TOC of input drive
+* Bug fix: -hide hfsplus and -as mkisofs -hide-hfsplus had no effect.
+           Thanks to Davy Ho.
+* Bug fix: ./configure did not abort if libburn.h or libisofs.h were missing
+* New command -move
+* New -as mkisofs options -eltorito-id , -eltorito-selcrit
+
+libisoburn-1.2.6.tar.gz  Tue Jan 08 2013
+===============================================================================
+* Bug fix: SIGSEGV by uninitialized local variable with
+           -check_media patch_lba0="on". Regression by version 1.0.6
+* Bug fix: -partition_offset 16 kept -isohybrid-gpt-basdat from writing
+           MBR partition table entries of type 0xef
+* Bug fix: -rollback did not work if indev and outdev were empty
+* New API calls Xorriso_parse_line() and Xorriso__dispose_words()
+* New API calls Xorriso_fetch_outlists() and Xorriso_peek_outlists()
+* New API call Xorriso_start_msg_watcher()
+* New API calls Xorriso__severity_cmp() and Xorriso__severity_list()
+* New API calls Xorriso_sieve_add_filter, Xorriso_sieve_get_result,
+  Xorriso_sieve_clear_results, Xorriso_sieve_dispose, Xorriso_sieve_big
+* New -boot_image partition_cyl_align mode "all"
+* New -blank mode prefix "force:"
+* New -osirrox settings "blocked" and "unblock"
+* New command -lns for creating symbolic links
+* New command -toc_of
+* New command -msg_op
+* New command -launch_frontend
+* Proof-of-concept of a GUI frontend program: xorriso-tcltk written in Tcl/Tk.
+
+libisoburn-1.2.4.tar.gz  Fri Jul 20 2012
+===============================================================================
+* New API call isoburn_igopt_set_hfsp_serial_number()
+* New API calls isoburn_igopt_set_prep_partition, isoburn_igopt_set_efi_bootp
+* New API calls isoburn_igopt_set_hfsp_block_size() and isoburn_igopt_get_hfsp_block_size()
+* New -check_media option async_chunks=
+* New xorriso command -write_type
+* New xorriso command -rockridge
+* New xorriso command -hfsplus
+* New -find tests -has_hfs_crtp, has_hfs_bless
+* New -find actions set/get_hfs_crtp,  set/get_hfs_bless
+* New -find test -disk_path
+* New -boot_image bootspec hfsplus_serial=
+* New -boot_image bootspecs hfsplus_block_size= and apm_block_size=
+* New -boot_image bootspecs efi_boot_part, prep_boot_part, chrp_boot_part
+* Command -hide allows hiding in HFS+ filesystem
+* New -as cdrecord options -tao -sao -dao
+* New -as mkisofs option -log-file
+* New -as mkisofs option --norock
+* New -as mkisofs option -hfsplus
+* New -as mkisofs option -hfsplus-file-creator-type
+* New -as mkisofs options -hfs-bless and -hfs-bless-by
+* New -as mkisofs option -hfsplus-serial-no
+* New -as mkisofs options -hfsplus-block-size and -apm-block-size
+* New -as mkisofs option -hide-hfsplus, -hide-hfsplus-list
+* New -as mkisofs options -prep-boot-part, -efi-boot-part, -chrp-boot-part
+* New -as mkisofs options -isohybrid-gpt-basdat, -isohybrid-gpt-hfsplus, -isohybrid-apm-hfsplus
+* Bug fix: Memory corruption when reading bootable image that was truncated
+* Bug fix: -update deleted MD5 of files of which only attributes had changed
+
+libisoburn-1.2.2.tar.gz  Mon Apr 02 2012
+===============================================================================
+* New API calls isoburn_get_attached_start_lba(), isoburn_attach_start_lba()
+* New API calls isoburn_igopt_set_rr_reloc(), isoburn_igopt_get_rr_reloc()
+* New API calls isoburn_ropt_set_data_cache(), isoburn_ropt_get_data_cache()
+* New commands -x, -list_arg_sorting
+* New command -rr_reloc_dir
+* New command -data_cache_size
+* New -as mkisofs option -rr_reloc, implemented option -hide-rr-moved
+* Now ignoring -as mkisofs -no-split-symlink-components -no-split-symlink-fields
+* Bug fix: -osirrox on:sort_lba_on -extract from / restored nearly nothing
+* Bug fix: -as mkisofs without -graft-points could not handle names with "="
+* Bug fix: Relaxation options joliet_rec_mtime and iso1999_rec_mtime had wrong values
+
+
+libisoburn-1.2.0.tar.gz  Sat Jan 28 2012
+===============================================================================
+* Bug fix: mkisofs emulation did not record mtime in ECMA-119 directories
+* Bug fix: Program abort while drive tray is loading led to endless loop
+* Bug fix: Solaris adapter mishandled write commands which failed on first try
+* Bug fix: libisoburn.ver had a duplicate function entry
+* New relaxations isoburn_igopt_joliet_rec_mtime,
+  isoburn_igopt_iso1999_rec_mtime
+* Made -compliance "rec_mtime" default for xorriso
+
+libisoburn-1.1.8.tar.gz  Mon Nov 21 2011
+===============================================================================
+* Info document and man page for xorrecord
+* New option -sleep
+* Enabled recognition of QEMU DVD-ROM 0.12
+* Enabled out-of the box use of xorriso on Linux guest on qemu virtio-blk-pci
+
+libisoburn-1.1.6.tar.gz  Tue Sep 27 2011
+===============================================================================
+* Bug fix: -extract_single extracted directory content
+* Bug fix: -extract was not immediately aborted if -abort_on was triggered
+* Bug fix: xorriso did not write to files in filesystems with >= 4 TB free space
+* Bug fix: libisofs: ACL entries of groups and of user id 0 were not properly
+           recorded and cannot be restored
+* Bug fix: libisofs: No ACLs were recorded on FreeBSD
+* Enabled recording and restoring of extattr on FreeBSD.
+* New option -list_extras
+* New -osirrox option strict_acl
+* New -find and -findx action list_extattr
+* Workaround for collision with Linux udev which lets device links vanish
+
+libisoburn-1.1.4.tar.gz  Mon Aug 8 2011
+===============================================================================
+* Bug fix: xorriso native mode on some drives wrote unreadble ISO images to CD
+* Bug fix: -assert_volid did not work. Regression since version 1.1.0.
+* Bug fix: -acl or -xattr worked with -extract only on Linux and FreeBSD
+* New option -device_links
+
+libisoburn-1.1.2.tar.gz  Fri Jul 8 2011
+===============================================================================
+* Bug fix: Since 1.0.6: Unreadable image produced by: xorrisofs ... >image.iso
+* Bug fix: -update_r scheduled non-existing files for hardlink update
+* Enabled extraction of the boot catalog file to disk filesystem
+* New option -list_speeds
+
+GNU xorriso-1.1.0.pl01.tar.gz  Mon Jun 20 2011
+===============================================================================
+* Bug fix: Due to a bug in libburn-1.1.0, GNU xorriso-1.1.0 compiled only
+           on GNU/Linux, FreeBSD, and Solaris, but not on other systems.
+
+libisoburn-1.1.0.tar.gz  Sat Jun 18 2011
+===============================================================================
+* Bug fix: -mount_opts shared worked only with -osirrox o_excl_off
+* Bug fix: xorriso command -add_plainly "any" did not add all files to the image
+* Bug fix: The attempt to blank already blank DVD-RW was not gracefully blocked
+* Bug fix: -as mkisofs -isohybrid-mbr without -no-pad was not cylinder aligned
+* New option -signal_handling
+* New option -close_damaged
+* Dropped suffix .plXY from tarball name
+
+libisoburn-1.0.8.pl00.tar.gz  Thu Apr 14 2011
+===============================================================================
+* Bug fix: mkisofs emulation could ignore options (regression in 0.1.6)
+
+libisoburn-1.0.6.pl00.tar.gz  Sat Apr 9 2011
+===============================================================================
+* Bug fix: -as mkisofs padding did not work (regression in 1.0.4)
+* Bug fix: Options -gid and -uid had no effect
+* New API call isoburn_set_truncate()
+* New relax option isoburn_igopt_joliet_long_names
+* New option -early_stdio_test
+* New options -print_info and -print_mark
+* New -compliance option joliet_long_names
+* -as mkisofs option -joliet-long is now fully functional
+* Burning DVD-R DAO with 2 kB size granularity rather than 32 kB
+
+libisoburn-1.0.4.pl00.tar.gz  Thu Mar 10 2011
+===============================================================================
+libisoburn novelties:
+* New isoburn_ropt_set_extensions() option isoburn_ropt_nomd5tag
+xorriso novelties:
+* Bug fix: xorrisofs did not work under growisofs -M (version 1.0.0 was ok)
+* Bug fix: -as mkisofs -C attempted to read volume header of blank media
+* Bug fix: -as mkisofs -old-root did not work with -graft-points
+* Bug fix: -as mkisofs -partition_hd_cyl had no effect
+* Bug fix: -as mkisofs did not properly unescape target part of pathspecs
+* Bug fix: isohybrid image size was not aligned to cylinder boundary
+* Bug fix: Compilation without zlib failed
+* New -padding modes "included" and "appended"
+* New bootspec partition_cyl_align=, new -as mkisofs option -partition_cyl_align
+* New -as mkisofs and -as cdrecord option --no_rc
+* Own man page and info document for xorrisofs
+
+libisoburn-1.0.2.pl00.tar.gz  Mon Feb 23 2011
+===============================================================================
+libisoburn novelties:
+* Removed compiler obstacles of GNU xorriso on Solaris 9
+* New isoburn_igopt_set_extensions() option isoburn_igopt_old_empty
+xorriso novelties:
+* Bug fix: Images produced with -for_backup might be unreadable and
+           also fail -check_md5 verification.
+* Bug fix: mkisofs emulation options -l , -full-iso9660-filenames did not work.
+* Bug fix: Option -mkdir yielded SIGSEGV due to a NULL pointer
+* Bug fix: ECMA-119 standards violation with Volume Descriptor Set Terminator
+* New options -clone and -cp_clone
+* New -find actions update_merge, rm_merge, clear_merge
+* New -as mkisofs option -max-iso9660-filenames
+* New -as mkisofs option --old-empty
+* New -as mkisofs options -root , -old-root
+* New -as mkisofs options --old-root-no-md5, --old-root-no-ino, --old-root-dev
+
+libisoburn-1.0.0.pl00.tar.gz  Mon Jan 17 2011
+===============================================================================
+libisoburn novelties:
+* New API call isoburn_igopt_set_untranslated_name_len()
+xorriso novelties:
+* Bug fix: -as mkisofs -print-size did not account for -partition_offset
+* Default -abort_on value is now "FAILURE" with batch and "NEVER" with dialog
+* New -compliance options untranslated_names , untranslated_name_len=
+* New -as mkisofs option -untranslated_name_len
+* New -compliance option iso_9660_1999, -as mkisofs option -iso-level 4
+* New -compliance option iso_9660_level=number
+* New -compliance option allow_dir_id_ext, -as mkisofs -disallow_dir_id_ext
+* Disabled TOC emulation with -as mkisofs. May be re-enabled by --emul-toc.
+
+libisoburn-0.6.6.pl00.tar.gz  Sun Dec 12 2010
+===============================================================================
+libisoburn novelties:
+* New API calls isoburn_igopt_set_disc_label(), isoburn_igopt_get_disc_label()
+* New API calls isoburn_ropt_set_displacement(), isoburn_ropt_get_displacement()
+xorriso novelties:
+* Bug fix: -as mkisofs -print-size printed the size but also produced ISO image
+* Build problem fix on Linux 2.4 in GNU xorriso libjte/checksum.c
+* New -as mkisofs option -joliet-long
+* New bootspec sparc_label=, new -as mkisofs options -sparc-boot , -sparc-label
+* New option -displacement
+
+libisoburn-0.6.4.pl00.tar.gz Tue Oct 26 2010
+===============================================================================
+libisoburn novelties:
+* New API call isoburn_libjte_req()
+* New API calls isoburn_igopt_attach_jte() and isoburn_igopt_detach_jte()
+* New API call isoburn_igopt_set_tail_blocks()
+* New API call isoburn_libjte_req()
+xorriso novelties:
+* New option -jigdo
+* New -as mkisofs options -jigdo-* and -md5-list as of genisoimage
+* New -as mkisofs options -checksum_algorithm_iso, -checksum_algorithm_template
+* New bootspecs mips_path= and mipsel_path= for Debian MIPS releases
+* New -as mkisofs options -mips-boot and -mipsel-boot
+* New option -append_partition, -as mkisofs -append_partition
+
+libisoburn-0.6.2.pl00.tar.gz Sat Sep 18 2010
+===============================================================================
+libisoburn novelties:
+* New API function isoburn_igopt_set_part_offset()
+* Hiding all non-API symbols from the linker by use of --version-script
+* Now with history of release notes in ./ChangeLog file.
+xorriso novelties:
+* Bug fix: Regression with -hardlinks and -compliance old_rr, 0.4.2, Aug 2009
+* New option -preparer_id, -as mkisofs options -p and -preparer
+* New -boot_image specifier emul_type=none|hard_disk|floppy
+* New boot_image boot specs partition_offset,partition_hd_cyl,partition_sec_hd
+* Made behavior of -as mkisofs with unknown options more similar to original
+* New -as mkisofs option -hard-disk-boot, enabled -b without -no-emul-boot
+* New -as mkisofs option -e from Fedora genisoimage
+* New -as mkisofs options -partition_offset,-partition_hd_cyl,-partition_sec_hd
+
+libisoburn-0.6.0.pl00.tar.gz Fri Jul 02 2010
+===============================================================================
+libisoburn novelties:
+xorriso novelties:
+* New option -read_mkisofsrc interprets .mkisofsrc To be performed before -as 
+  mkisofs. Performed automatically with program alias name "xorrisofs".
+* Implemented -as mkisofs options -dir-mode, -file-mode, -abstract, -biblio, 
+  -copyright
+* Implemented -as mkisofs options -hide, -hide-joliet, -hide-list,
+  -hide-joliet-list
+* New -as mkisofs option --boot-catalog-hide
+* New option -hide, -find action -hide, -find test -hidden
+* New -boot_image bootspec cat_hidden=on
+* New options -copyright_file , -biblio_file , -abstract_file
+* New find test -disk_name
+* Enabled use of libreadline on Solaris
+* Bug fix: -check_media patch_lba0= could install wrong image size
+* Bug fix: -as mkisofs option -volset was wrongly interpreted like -volid
+
+libisoburn-0.5.8.pl00.tar.gz Mon Jun 14 2010
+===============================================================================
+libisoburn novelties:
+* xorriso source split into more modules, object code moved into libisoburn
+xorriso novelties:
+* New write extension option isoburn_igopt_no_emul_toc
+* New -compliance rule no_emul_toc, new -as mkisofs --no-emul-toc
+* Implemented -as cdrecord -V
+* Implemented -as mkisofs options -U, -N, -l, -d, -allow-lowercase
+
+libisoburn-0.5.6.pl00.tar.gz Tue May 04 2010
+===============================================================================
+libisoburn novelties:
+xorriso novelties:
+* Allowing up to 32 boot images
+* New -boot_image bootspecs
+  efi_path=, platform_id=, sel_crit=, id_string=, next
+* New -as mkisofs options --efi-boot, -eltorito-alt-boot
+
+libisoburn-0.5.4.pl00.tar.gz Mon Apr 19 2010
+===============================================================================
+libisoburn novelties:
+* New API call isoburn_igopt_set_system_area()
+* New API call isoburn_igopt_set_pvd_times()
+* New isoburn_igopt_set_relaxed() options: only_iso_versions, no_j_force_dots
+  xorriso novelties:
+* New -boot_image any system_area=, -as mkisofs option -G
+* New -boot_image grub partition_table=on, -as mkisofs --protective-msdos-label
+* New -boot_image isolinux partition_table=on, -as mkisofs -isohybrid-mbr
+* New option -volume_date, -as mkisofs --modification-date=
+* New -find action mkisofs_r,-as mkisofs -r
+* New -find action sort_weight, -as mkisofs --sort-weight
+* New -compliance options only_iso_version, no_j_force_dots avoid 
+  a bug in GRUB 1.96. They are default now.
+
+libisoburn-0.5.2.pl00.tar.gz Tue Mar 30 2010
+===============================================================================
+xorriso novelties:
+* xorriso documentation is now based on a hybrid format of Texinfo and man-
+  page. Copies included: .texi, .info, .1 (man page)
+
+libisoburn-0.5.0.pl00.tar.gz Tue Feb 22 2010
+===============================================================================
+xorriso novelties:
+* The former xorriso-standalone project is now GNU xorriso under GPLv3+. This
+  affects some documentation and the generator script, but not the license of
+  libisoburn or its program xorriso.
+* Bug fix: xorriso -update_r could lead to SIGSEGV if applied to a data file
+  rather than a directory.
+* Bug fix on FreeBSD: xorriso could leave the drive tray locked.
+* New option -scsi_log
+
+libisoburn-0.4.8.pl00.tar.gz Tue Jan 26 2010
+===============================================================================
+xorriso novelties:
+* Bug fix: xorriso did not blank CD-RW with images that were prepared 
+  on hard disk.
+* New configure option --enable-libcdio for system adapter to libcdio-0.83git
+
+libisoburn-0.4.6.pl00.tar.gz Wed Dec 09 2009
+===============================================================================
+xorriso novelties:
+* New options -dvd_obs and -stdio_sync
+* New configure option --enable-dvd-obs-64k
+
+libisoburn-0.4.4.pl00.tar.gz Wed Oct 28 2009
+===============================================================================
+xorriso novelties:
+* Bug fix: With -as cdrecord : -xa1 and -xamix were ignored although they do
+  matter.
+* Option -toc now reports the individual media type. E.g. with a DVD+RW:
+     "Media product: RICOHJPN/W11/49 , Ricoh Company Limited"
+* New option -pvd_info displays image id strings. New options -system_id , -
+  volset_id allow to set such image id strings.
+* New option -mount_opts tries to circumvent an eventual ban to mount the same
+  device twice. Some Linux systems allow to mount two sessions of the same
+  media only if they get fooled via the loop device.
+* New option -scdbackup_tag performs the task of the scdbackup MD5 checksum
+  filter inside xorriso.
+Already fixed by patch releases of xorriso-0.4.2:
+* Bug fix: -cut_out deleted previously cut-out pieces of the same file
+* Bug fix libisofs: Filenames could lose blanks during a multi-session cycle
+* Bug fix: -for_backup did not enable -xattr and -md5 if no drive was chosen
+  yet
+* Bug fix: xorrisofs -help, xorrecord -help displayed original xorriso -help
+
+libisoburn-0.4.2.pl02.tar.gz Thu Oct 08 2009
+===============================================================================
+* Bug fix: -for_backup did not enable -xattr and -md5 if no drive was chosen
+  yet
+* Bug fix: xorrisofs -help, xorrecord -help displayed original xorriso -help
+
+Libisoburn 0.4.2.pl01
+===============================================================================
+* Bug fix: xorriso option -cut_out deleted previously cut-out pieces of the
+  same file. The bug was introduced with release 0.1.4 in March 2008.
+
+Libisoburn 0.4.2
+===============================================================================
+* New write options isoburn_igopt_session_md5, isoburn_igopt_file_md5,
+  isoburn_igopt_file_stability allow to record MD5 checksums of session and
+  single data files.
+* New read option isoburn_ropt_nomd5 allows to read those MD5 sums when
+  importing an ISO image.
+xorriso novelties:
+* New option -md5, new -as mkisofs option --md5 allow to record in the image
+  MD5 checksums for the whole session and for each single data file.
+* New options -check_md5, -check_md5_r allow to verify the whole session or
+  single files by comparing their image data with their MD5 sums.
+* Options -compare, -compare_r, -update, update_r now can use recorded MD5.
+* New -find actions check_md5, get_md5, make_md5 allow to check, to display or
+  to recompute MD5 checksums of data files. New find test -has_md5 
+  distinguishes data files which have recorded MD5 from files which have none.
+* New -find test -has_any_xattr and action get_any_xattr allow to inspect the
+  libisofs specific attributes of namespace "isofs".
+* Options -lsl and lsdl now display correct link counts if -hardlinks is on.
+* New option -calm_drive allows to reduce drive noise if no data reading is
+  intended for a while.
+* New option -list_profiles allows to inquire and process the list of supported
+  media types.
+* Bug fix: xorriso -as mkisofs did not understand the -C option of growisofs
+  any more. (Already fixed by release 0.4.0.pl01, 20 Jul 2009)
+
+libisoburn-0.4.0.pl01.tar.gz Mon Jul 20 2009
+===============================================================================
+xorriso novelties:
+* New option -hardlinks enables recording and restoring of hard link relations.
+* Improved reading performance with -update_r and -extract.
+* New option -for_backup as shortcut for -acl -xattr -hardlinks
+* Operators with option -find : -not, -or, -and, (, ), -if, -then, -else
+* New -find tests -wholename, -prune
+* Bug fix: SIGSEGV with option -status and no search string
+* Bug fix: -load volid did not perform pattern search
+* Bug fix: Copies of overwriteable media on sequential were mistaken in ROM
+  drives
+Libisoburn 0.4.0.pl01 release notes:
+* Bug fix: xorriso -as mkisofs did not understand the -C option of growisofs
+  any more
+
+libisoburn-0.3.8.pl00.tar.gz Sun Apr 19 2009
+===============================================================================
+libisoburn novelties:
+* New API calls isoburn_ropt_set_auto_incharset() and
+  isoburn_ropt_get_auto_incharset()
+xorriso novelties:
+* New options -set_filter, -set_filter_r, -find -exec set_filter allow to
+  manipulate the content of data files on the fly.
+* New option -zisofs, built-in filters --zisofs , --gzip , --gunzip enable
+  compression and decompression of data file content.
+* New options -external_filter , -unregister_filter, -close_filter_list allow
+  arbitrary external processes to do content filtering.
+* New options -show_stream, -show_stream_r allow to inspect the origin and the
+  filters of data files in an emerging image.
+* New option -auto_charset based on xattr "isofs.cs" allows to tag an ISO
+  filesystem image with the character set name that is in use on the current
+  terminal.
+
+libisoburn-0.3.6.pl00.tar.gz Mon Mar 16 2009
+===============================================================================
+xorriso novelties:
+* Dummy MMC adapter of libburn allows compilation on systems other than Linux,
+  FreeBSD
+* Default of -compliance has been changed to "old_rr", new rule "new_rr"
+* New -stream_recording modes with start address or "data". "on" is now 32s.
+
+libisoburn-0.3.4.pl00.tar.gz Sun Mar 01 2009
+===============================================================================
+* New isoburn_read_opts values: isoburn_ropt_noaaip, isoburn_ropt_noacl,
+  isoburn_ropt_noea
+xorriso novelties:
+* New option -acl enables ACL import and export
+* New options -getfacl, -getfacl_r, -setfacl, -setfacl_r, -setfacl_list
+* New find tests -has_acl, -has_no_acl , new find actions getfacl, setfacl
+* New option -xattr enables import and export of Extended Attributes
+* New options -getfattr, -getfattr_r, -setfattr, -setfattr_r, -setfattr_list
+* New find tests -has_xattr, -has_aaip, new find actions getfattr, setfattr
+* New -as mkisofs options --acl and --xattr
+* New option -disk_dev_ino accelerates incremental backups
+
+libisoburn-0.3.2.pl00.tar.gz Tue Jan 06 2009
+===============================================================================
+* New API function isoburn_get_mount_params()
+* Now depending on libburn-0.6.0 which supports BD-R media
+xorriso novelties:
+* Bug fix: Options -extract and -extract_single were enabled with -osirrox off
+* New options -mount , -mount_cmd , -session_string
+* New -format modes by_size_ and fast_by_size_
+* New option -assert_volid
+* New option -drive_class for safety management of pseudo-drive access
+
+libisoburn-0.3.0.pl00.tar.gz Tue Dec 2 2008
+===============================================================================
+* Now depending on libisofs-0.6.12 and libburn-0.5.6 to ensure use of their
+  recent bug fixes
+xorriso novelties:
+* New options -quoted_path_list, -quoted_not_list
+* New option -backslash_codes for weird file names and terminal safety
+* New options -charset, -in_charset, -out_charset
+* New option -local_charset allows to override locale
+* New option -application_id
+* New option -compliance allows certain deviations from standards
+* Suitable ISOLINUX boot images are made alternatively bootable via an MBR
+* Bug fix: Forgot exit value registration to -return_with. 
+  Thanks to Steve Dodd.
+* Bug fix: -format as_needed did not recognize unformatted BD-RE
+* Bug fix: disk patterns with relative addresses were not properly resolved
+
+libisoburn-0.2.8.pl00.tar.gz Wed Oct 15 2008
+===============================================================================
+* Now depending on libisofs-0.6.10 and libburn-0.5.4 to ensure use of their
+  recent bug fixes
+xorriso novelties:
+* Ability to write and maintain bootable ISO images based on ISOLINUX
+* New ./configure option --disable-libreadline to make binary more portable
+* Bug fix: -as mkisofs -iso-level was accused to be an unknown option
+* Bug fix: -follow link attributed random target filenames to looping links
+
+libisoburn-0.2.6.pl00.tar.gz Sat Sep 20 2008
+===============================================================================
+xorriso novelties:
+* Capability to insert and extract files far larger than 4 GB
+* New option -file_size_limit, -as mkisofs now supports -iso-level 1 to 3
+* New option -extract_cut
+* New -error_behavior "file_extraction" behavior "best_effort"
+* New option -check_media_defaults
+* New option -list_delimiter
+* Bug fix: -format full did not re-format already formatted DVD+RW
+
+libisoburn-0.2.4.pl00.tar.gz Mo Aug 25 2008
+===============================================================================
+xorriso novelties:
+* New option -check_media
+* New -find test -damaged, new -find actions "report_damage", "report_lba"
+* New -error_behavior occasion "file_extraction"
+
+libisoburn-0.2.2.pl01.tar.gz Fr Jul 25 2008
+===============================================================================
+Libisoburn 0.2.2 release notes (Jul 19 2008)
+* New API function isoburn_prepare_blind_grow()
+* New flag bits with isoburn_set_msc1(), isoburn_read_iso_head()
+xorriso novelties:
+* New option -grow_blindly
+* Options -C and -M for -as mkisofs emulation
+* Options for -as cdrecord emulation: -multi, -msinfo, -isosize, tsize, --
+  grow_overwriteable_iso, write_start_address,
+* New option -pacifier, more compatible pacifier with -as mkisofs
+* make install creates aliases as symbolic links: osirrox, xorrisofs, xorrecord
+* Can serve growisofs if started as xorrisofs, genisofs, mkisofs, genisoimage
+pl01 changes (Jul 25 2008):
+* Bug fix: Variable DESTDIR was not properly respected during make install
+
+libisoburn-0.2.0.pl00.tar.gz Mon Jun 23 2008
+===============================================================================
+Libisoburn 0.2.0 release notes:
+* New API functions isoburn_set_msgs_submit(), isoburn_drive_set_msgs_submit()
+xorriso novelties:
+* Bug fix: -chmod unintentionally performed o-x as first operation
+* New options -cpax, -cp_rx, -cp_rax, -extract to restore files and trees from
+  ISO image to disk filesystem.
+* New option -paste_in to copy ISO files into parts of disk files
+* New options -map_l, -compare_l, -update_l, -extract_l
+
+libisoburn-0.1.8.pl00.tar.gz Tue Jun 3 2008
+===============================================================================
+* Bug fix: Major,minor numbers of device files appeared as 0,1 in next session
+* Bug fix: modifying to overwriteable target yielded unmountable results
+xorriso novelties:
+* New option -stream_recording for full speed with DVD-RAM and BD-RE
+* New options -osirrox and -cpx allow to extract single files from ISO image
+
+libisoburn-0.1.6.pl00.tar.gz Mon May 19 2008
+===============================================================================
+* Support for BD-RE (by depending on libburn-0.4.8)
+* New API wrapper calls isoburn_toc_*() around libburn TOC inquiry calls
+* New API call isoburn_read_iso_head() identifies ISO 9660 filesystems
+* New API call isoburn_set_msc1() (like mount -o sbsector=)
+xorriso novelties:
+* Bug fix: -update_r and others did not work properly with relative paths
+* New options -map and -map_single
+* New options -not_paths, -not_leaf, -not_list, -not_mgt, -as mkisofs -m
+* Emulated -toc on overwriteable media, new -toc layout with volume id
+* New option -load makes alternative sessions accessible
+* New -blank and -format modes 'as_needed'
+* New option -list_formats and -format mode 'by_index_'
+
+libisoburn-0.1.4.pl00.tar.gz Wed Apr 30 2008
+===============================================================================
+* Improved performance with reading directory trees
+* xorriso: Improved attribute transfer from disk for target
+* xorriso: Incremental backup functionality by new option -update_r
+* xorriso: Options -cut_out and split_size map byte intervals of oversized
+  files into ISO files
+* xorriso: Emulation of some basic mkisofs and cdrecord options
+* Dynamically linkable with release version 0.6.4 of libisofs
+
+Version 0.1.2 was not released as libisoburn 
+but only as xorriso standalone version. Wed Mar 12 2008
+===============================================================================
+* Bug fix: -report_about HINT or higher did not report at all
+* Bug fix: speed=number without unit or media type letter was always CD speed
+* Bug fix: it was possible to write to appendable media which was not -indev
+* Bug fix: -follow param did not work for adding non-directory symbolic links
+* Bug fix: It was not possible to -add /THIS=a /b=THIS
+* Improved attribute transfer from disk for implicit target directories
+* New option -as "cdrecord" emulates a narrow set of cdrecord gestures
+* New option -as "mkisofs" emulates a narrow set of mkisofs gestures
+* New option -publisher
+* New option -errfile_log
+* Support for DVD+R/DL media
+* New options -compare, -compare_r and according -find -exec action
+* New options -update, -update_r and according -find -exec action
+* New -find actions "rm", "rm_r", new -findx -type "m" -exec "empty_iso_dir"
+* New option -cut_out
+
+libisoburn-0.1.0.pl01.tar.gz Fri Feb 15 2008
+===============================================================================
+* Initial release of libisoburn/xorriso
+* libisoburn connects libisofs and libburn
+* libisoburn emulates multi-session on media without session history
+* xorriso is an integrated multi-session tool for ISO 9660 Rock Ridge images
+* due to a subtle mistake in ABI usage with libisofs this release had to be
+  restricted to dynamic linking with exactly libisofs-0.6.2 where the mistake
+  does no harm. A version of libisoburn which is open to all future libisofs
+  versions will be released shortly after libisofs.0.6.4.
+

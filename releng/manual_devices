@@ -1,0 +1,188 @@
+#!/bin/bash
+
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Copyright 2011 Thomas Schmitt <scdbackup@gmx.net>
+# Licensed under GNU GPL version 2 or later
+
+# set -e
+
+print_specific_help() {
+cat << HLP
+Specific options:
+       --dev path  Suppress dialog and use path as drive address.
+       --priv_cmd 'command [arg [arg ...]]'
+                   With drive operations execute xorriso as argument
+                   of the given command (e.g. pfexec, sudo) with the
+                   optionally given arguments: command arg arg xorriso ...
+                   Command and arguments must be single words.
+Overview:
+       Test device scanning and list of speeds.
+HLP
+}
+
+# Include common bits and interpret general options
+getopts_inc=inc/releng_getopts.inc
+if test -e "$getopts_inc"
+then
+  . "$getopts_inc"
+
+  if test "$SPECIFIC_HELP" = 1
+  then
+       print_specific_help
+       exit 0
+  fi
+else
+  echo >&2
+  echo "File not found: $getopts_inc" >&2
+  echo "Are we in the ./releng directory of a libisoburn SVN checkout ?" >&2
+  echo "(Please execute the tests from that ./releng directory.)" >&2
+  echo >&2
+  exit 2
+fi
+
+# Interpret private options, they begin after the first --.
+dev=
+priv_cmd=
+next_is=ignore
+for i in "$@"
+do
+  if test "$next_is" = "ignore"
+  then
+       if test "$i" = "--"
+       then
+            next_is=""
+       fi
+  elif test "$next_is" = "dev"
+  then
+       dev="$i"
+       next_is=""
+  elif test "$next_is" = "priv_cmd"
+  then
+       priv_cmd="$i"
+       next_is=""
+  elif test "$i" = "--dev"
+  then
+       next_is="dev"
+  elif test "$i" = "--priv_cmd"
+  then
+       next_is="priv_cmd"
+  else
+       echo >&2
+       echo "Unknown test specific option: $i" >&2
+       print_help
+       print_specific_help
+       exit 31
+  fi
+done
+
+# Insist in having a xorriso 
+check_for_xorriso -x
+
+has_device_links=$("$RELENG_XORRISO" -help 2>/dev/null | fgrep ' -device_links')
+if test -n "$has_device_links"
+then
+  devices_opt="-device_links"
+else
+  devices_opt="-devices"
+fi
+
+#
+get_speeds() {
+  echo -e "\n${SELF}: Running:  ${priv_cmd} ${RELENG_XORRISO} -report_about WARNING -outdev ${1} -toc -list_formats -list_profiles out -list_speeds"
+   ${priv_cmd} "$RELENG_XORRISO" -report_about WARNING -outdev "$1" \
+                    -print '---toc :'            -toc \
+                    -print '---list_formats :'   -list_formats \
+                    -print '---list_profiles :'  -list_profiles out \
+                    -print '---list_speeds :'    -list_speeds
+}
+
+cat_var() {
+# $1 = variable to put out with line feeds
+cat <<+
+$1
++
+}
+
+get_devices() {
+  # $1 = if not empty: device lines from xorriso -devices or -device_links
+  # $2 = if not empty: suppress dialog and use $2 as input
+
+  if test -n "$1"
+  then
+       DEVICES="$1"
+  else
+       DEVICES=$( ${priv_cmd} "$RELENG_XORRISO" $devices_opt 2>/dev/null | grep "\-dev")
+  fi
+  NUM_DEV=$(cat_var "$DEVICES" | wc -l)
+  case "${NUM_DEV}" in
+       0)
+          echo -e "\n${SELF}: No drives found."
+	  exit 1
+       ;;
+       1)
+          echo -e "\n${SELF}: 1 drive found:\n"
+       ;;
+       *)
+          echo -e "\n${SELF}: ${NUM_DEV} drives found:\n"
+       ;;
+  esac
+  echo =================================================================
+  echo "$DEVICES"
+  echo =================================================================
+
+  OUTDEV=$( cat_var "$DEVICES" | head -1 | \
+            sed -e "s/[0-9]  *-dev '\//\//"  -e "s/'.*$//" )
+  if test -n "$2"
+  then
+       x="$2"
+  else
+       echo >&2
+       echo "WARNING: The following tests might pull in the drive tray." >&2
+       echo "         Best is if you now put in a suitable media and" >&2
+       echo "         load it manually, so nobody gets surprised. :))" >&2
+       echo >&2
+       echo "Which drive to examine ? (Empty input = ${OUTDEV})" >&2
+       read x
+  fi
+  if test -n "$x"
+  then
+       OUTDEV="$x"
+  fi
+
+  get_speeds "$OUTDEV"
+}
+
+# main
+"$RELENG_XORRISO"  -version
+echo -e "\n${SELF}: Running: $RELENG_XORRISO $devices_opt ..."
+devices=$( ${priv_cmd} "$RELENG_XORRISO" -report_about WARNING $devices_opt | grep "\-dev")
+RET="$?"
+if test "$SIMULATE_FAILURE" = 1
+then
+     echo "===" >&2
+     echo "=== SIMULATING FAILURE BY OVERRIDING EXIT VALUE OF XORRISO" >&2
+     echo "===" >&2
+     echo "FAIL : ${SELF} : Simulated failure caused by option -f"
+     RET=1
+fi
+case ${RET} in
+     0)
+      get_devices "$devices" "$dev"
+      RET="$?"
+      if test "$RET" = 0
+      then :
+      else
+           echo "FAIL : ${SELF} : Device scan or single drive listing failed"
+           exit "$RET"
+      fi
+     ;;
+     *)
+      boldify
+      echo -ne "\n${SELF}: ${priv_cmd} ${RELENG_XORRISO} $devices_opt returned ${RET}."
+      unboldify
+      echo -e  "\n${SELF}: Already mounted?"
+      df -kh
+      exit 1
+esac
+
+exit 0

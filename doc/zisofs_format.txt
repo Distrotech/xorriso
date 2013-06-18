@@ -1,0 +1,154 @@
+
+                        Description of the zisofs Format
+
+                   as of zisofs-tools-1.0.8 by H. Peter Anvin
+                   and cdrtools-2.01.01a39 by Joerg Schilling
+ 
+       For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
+       - distribute freely , please report any errors or ambiguities -
+
+                                Apr 11 2009
+
+
+The zisofs format was invented by H. Peter Anvin. It compresses data file
+content, marks it by a header and provides a pointer array for coarse random
+access. Within a RRIP enhanced ISO 9660 image the format is additionally marked
+by a System Use entry with signature "ZF".
+
+The uncompressed size of a single zisofs compressed file is restricted
+to 4 GiB - 1. Larger files shall not be compressed.
+
+
+                                File Header
+
+The file header has this layout (quoted from zisofs-tools-1.0.8/mkzftree.c):
+    Byte offset   iso9660 type    Contents
+      0           (8 bytes)       Magic number (37 E4 53 96 C9 DB D6 07)
+      8           7.3.1           Uncompressed file size
+     12           7.1.1           header_size >> 2 (currently 4)
+     13           7.1.1           log2(block_size)
+     14           (2 bytes)       Reserved, must be zero
+So its size is 16.
+7.3.1 means little endian 4-byte words. 7.1.1. means unsigned single bytes.
+
+Readers shall be able to handle log2(block_size) values 15, 16 and 17
+i.e. block sizes 32 kB, 64 kB, and 128 kB. Writers must not use other sizes.
+
+
+                               Block Pointers
+
+There are ceil(input_size / block_size) input resp. output blocks.
+Each input block is of fixed size whereas the output blocks have varying
+size (down to 0). For each output block there is an offset pointer giving
+its byte address in the overall file content. The next block pointer in the
+array tells the start of the next block which begins immediately after the
+end of its predecessor. A final pointer gives the first invalid byte address
+and thus marks the end of the last block.
+
+So there are ceil(input_size / block_size) + 1 block pointers.
+They are stored as an array of 4-byte values which are in ISO 9660:7.3.1 format
+directly after the file header, i.e. beginning at byte 16.
+
+
+                                 Data Part
+
+The data part begins immediately after the pointer array. In principle it
+consists of the variable length output blocks as delivered by zlib function
+compress2() when fed with the fixed size input blocks.
+
+A special case of input and output block is defined:
+Zero-length blocks represent a block full of 0-bytes.
+Such input blocks do not get processed by compress2() but shall be mapped to
+0-sized output directly. Vice versa 0-sized blocks have to bypass uncompress()
+when being read.
+
+
+                         ZF System Use Entry Format
+
+ZF may only be applied to files with a single extent and less than 4 GiB of
+uncompressed size.
+
+The ZF entry follows the general layout of SUSP resp. RRIP.
+Its fields are:
+
+  [1] "BP 1 to BP 2 - Signature Word" shall be (5A)(46) ("ZF").
+
+  [2] "BP 3 - Length" shall specify as an 8-bit number the length in bytes of
+      the ZF entry recorded according to ISO 9660:7.1.1.
+      This length is 16 decimal.
+
+  [3] "BP 4 - System Use Entry Version" shall be 1 as in ISO 9660:7.1.1.
+
+  [4] "BP 5 to BP 6 - Algorithm"  shall be (70)(7A) ("pz") to indicate 
+      "paged zlib".
+
+  [5] "BP 7 - Header Size Div 4" shall specify as an 8-bit number the number of
+      4-byte words in the header part of the file data recorded according
+      to ISO 9660:7.1.1.
+      (This is a copy of header byte 12, resp. header BP 13).
+
+  [6] "BP 8 - Log2 of Block Size" shall specify as an 8-bit number the binary
+      logarithm of the compression block size recorded according to
+      ISO 9660:7.1.1.
+      (This is a copy of header byte 13, resp. header BP 14.
+       The value has to be 15, 16 or 17 i.e. 32 kiB, 64 kiB, or 128 kiB.)
+
+  [7] "BP 9 to BP 16 - Uncompressed Size" shall tell the number of uncompressed
+      bytes represented by the given extent. This field shall be recorded
+      according to ISO 9660:7.3.3.
+      (This number is the same as in header bytes 8 to 11, resp header BP 9
+       to BP 12.)
+
+  | 'Z' | 'F' | LENGTH | 1 | 'p' | 'z' | HEADER SIZE DIV 4 | LOG2 BLOCK SIZE
+  | UNCOMPRESSED SIZE |
+
+ISO 9660:7.3.3 means 4-byte word in both byte orders, first little endian, then
+big endian.
+Example (block size 32 kiB, uncompressed file size = 1,234,567 bytes):
+  { 'Z',  "F',   16,    1,  'p',  'z',    4,   15,
+   0x87, 0xD6, 0x12, 0x00, 0x00, 0x12, 0xD6, 0x87 }
+
+
+-------------------------------------------------------------------------------
+Revoked specification aspects:
+
+A comment in zisofs-tools-1.0.8 indicates a special case of output block:
+  "a block the length of which is equal to the block size is unencoded."
+This is not implemented in zisofs-tools and in the Linux kernel. Existing
+zisofs enhanced ISO images might contain encoded blocks which could be
+mistaken for unencoded blocks.
+Therefore this rule is not part of this description and must not be
+implemented.
+
+-------------------------------------------------------------------------------
+References:
+
+zisofs-tools
+  http://freshmeat.net/projects/zisofs-tools/
+
+zlib:
+  /usr/include/zlib.h
+
+cdrtools with mkisofs
+  ftp://ftp.berlios.de/pub/cdrecord/alpha
+
+ECMA-119 aka ISO 9660
+  http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-119.pdf
+
+SUSP 1.12
+  ftp://ftp.ymi.com/pub/rockridge/susp112.ps
+
+RRIP 1.12
+  ftp://ftp.ymi.com/pub/rockridge/rrip112.ps
+
+-------------------------------------------------------------------------------
+
+This text is under
+Copyright (c) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+It shall reflect the effective technical specifications as implemented in
+zisofs-tools and the Linux kernel. So please contact mailing list
+<libburn-hackers@pykix.org> or to the copyright holder in private, if you
+want to make changes.
+Only if you cannot reach the copyright holder for at least one month it is
+permissible to modify and distribute this text under the license "BSD revised".
+

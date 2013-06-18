@@ -1,0 +1,256 @@
+#!/bin/bash
+
+# Copyright 2011 George Danchev <danchev@spnet.net>
+# Copyright 2011 Thomas Schmitt <scdbackup@gmx.net>
+#
+# Licensed under GNU GPL version 2 or later
+
+set -e
+# set -x
+
+print_specific_help() {
+cat << HLP
+Specific options: 
+       --dev path  use path as drive address. Default: /dev/cdrw
+       --what path use path as address of the directory which shall
+                   be copied into an ISO 9660 filesystem on media.
+       --any_media allow non re-usable MMC media, like CD-R or DVD+R.
+                   Allow paths to non-existing files, but disallow paths
+                   to existing regular files.
+       --priv_cmd 'command [arg [arg ...]]'
+                   With drive operations execute xorriso as argument
+                   of the given command (e.g. pfexec, sudo) with the
+                   optionally given arguments: command arg arg xorriso ...
+                   Command and arguments must be single words.
+Overview:
+       Test burning to re-usable media CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE.
+       By default, one-time usable media will be rejected deliberately.
+HLP
+}
+
+wait_for_dev () {
+# $1 = device address
+  timeout=30
+  counter=0
+
+  while test "$counter" -lt "$timeout"
+  do
+    if test -e "$1"
+    then
+      echo
+      return 0
+    fi
+    if test "$counter" = 0
+    then
+      echo
+      echo "Not existing: $dev"
+      echo "Will wait up to $timeout seconds for it to appear."
+    fi
+    counter=$(expr $counter + 1)
+    echo -n "$counter " 
+    sleep 1
+  done
+  echo
+  return 1
+}
+
+getopts_inc=inc/releng_getopts.inc
+if test -e "$getopts_inc"
+then
+  . "$getopts_inc"
+  if test "$SPECIFIC_HELP" = 1
+  then
+       print_specific_help
+       exit 0
+  fi
+else
+  echo >&2
+  echo "File not found: $getopts_inc" >&2
+  echo "Are we in the ./releng directory of a libisoburn SVN checkout ?" >&2
+  echo "(Please execute the tests from that ./releng directory.)" >&2
+  echo >&2
+  exit 29  
+fi
+
+# Set default values for specific option variables.
+dev=/dev/cdrw
+what=../xorriso
+any_media=0
+priv_cmd=
+# Interpret specific options, they begin after the first --.
+next_is=ignore
+for i in "$@"
+do
+  if test "$next_is" = "ignore"
+  then
+       if test "$i" = "--"
+       then
+            next_is=""
+       fi
+  elif test "$next_is" = "dev"
+  then
+       dev="$i"
+       next_is=""
+  elif test "$next_is" = "what"
+  then
+       what="$i"
+       next_is=""
+  elif test "$next_is" = "priv_cmd"
+  then
+       priv_cmd="$i"
+       next_is=""
+  elif test "$i" = "--dev"
+  then
+       next_is="dev"
+  elif test "$i" = "--what"
+  then
+       next_is="what"
+  elif test "$i" = "--any_media"
+  then
+       any_media=1
+  elif test "$i" = "--priv_cmd"
+  then
+       next_is="priv_cmd"
+  else
+       echo >&2
+       echo "Unknown test specific option: $i" >&2
+       print_help
+       print_specific_help
+       exit 31
+  fi
+done
+
+
+check_for_xorriso -x
+
+
+# check data dir, if any and after checking -x xorriso
+if [ -d "${GEN_DATA_DIR}" ]; then
+ printf "\n${SELF}: directory %s exists!" ${GEN_DATA_DIR}
+ printf "\n${SELF}: use '${SELF} -c' to remove.\n"
+ exit 30
+else
+ mkdir "${GEN_DATA_DIR}"
+fi
+
+
+#####################################################################
+
+# Inspect drive address
+if test -e "$dev"
+then
+  if test "$any_media" = 1 -a -f "$dev"
+  then
+    echo "FAIL : ${SELF} : --dev $dev leads to an existing regular file"
+    echo
+    cleanup
+    exit 31
+  fi
+else
+  if test "$any_media" = "0"
+  then
+    echo "FAIL : ${SELF} : --dev $dev does not lead to an existing file"
+    echo
+    cleanup
+    exit 31
+  fi
+fi
+
+# Inspect media
+set +e
+wait_for_dev "$dev"
+res=$(${priv_cmd} "$RELENG_XORRISO" -outdev "$dev" 2>&1)
+ret=$?
+set -e
+if test "$ret" -ne 0
+then
+  echo "$res" >&2
+  echo "FAIL : ${SELF} : Non-zero exit value $ret with: ${priv_cmd} $RELENG_XORRISO -outdev $dev"
+  echo
+  cleanup
+  exit 1
+elif echo "$res" | grep '^Media current:' >/dev/null 2>&1
+then
+  media=$(echo "$res" | grep '^Media current:' | \
+          sed -e 's/^Media current: //')
+  echo "Detected media: '$media'"
+  if test "$media" = "CD-RW" -o "$media" = "DVD-RW sequential recording" -o \
+          "$media" = "DVD-RW restricted overwrite" -o "$media" = "DVD-RAM" -o \
+          "$media" = "DVD+RW" -o "$media" = "BD-RE"
+  then
+    echo "Recognized as re-usable."
+  elif test "$media" = "is not recognizable"
+  then
+    echo "FAIL : ${SELF} : No recognizable media detected in: '$dev'"
+    echo
+    cleanup
+    exit 2
+  elif test "$any_media" = 1
+  then
+    echo "Accepted media only because of option --any_media : '$media'"
+  else
+    echo "FAIL : ${SELF} : No re-usable media detected, but: '$media'"
+    echo
+    cleanup
+    exit 2
+  fi
+fi
+
+# Perform burn run
+echo ${priv_cmd} "$RELENG_XORRISO" -for_backup -outdev "$dev" -blank as_needed -map "$what" /test
+set +e
+wait_for_dev "$dev"
+${priv_cmd} "$RELENG_XORRISO" \
+    -for_backup \
+    -outdev "$dev" \
+    -blank as_needed \
+    -map "$what" /test
+ret=$?
+set -e
+if test "$ret" -ne 0
+then
+  echo "FAIL : ${SELF} : Non-zero exit value with burn run: $ret"
+  echo
+  cleanup
+  exit 1
+fi
+
+if test "$SIMULATE_FAILURE" = 1
+then
+  echo "FAIL : ${SELF} : Simulated failure caused by option -f" 
+  if test -f "$dev"
+  then
+    # Alter image 
+    dd if=/dev/urandom bs=2K count=1 \
+       of="$dev" conv=notrunc seek=400
+  else
+    cleanup
+    exit 1
+  fi
+fi
+
+# Check read
+echo ${priv_cmd} "$RELENG_XORRISO" -for_backup -indev "$dev" \
+     -check_media event=FATAL -- \ -check_md5_r FATAL / --
+set +e
+wait_for_dev "$dev"
+${priv_cmd} "$RELENG_XORRISO" \
+    -for_backup \
+    -indev "$dev" \
+    -print '---check_media:'  -check_media event=FATAL -- \
+    -print '---check_md5_r:'  -check_md5_r FATAL / -- \
+    -print '---compare_r:'    -md5 off -compare_r "$what" /test
+ret=$?
+set -e
+if test "$ret" -ne 0
+then
+  echo "FAIL : ${SELF} : Non-zero exit value with checkread run: $ret"
+  echo
+  cleanup
+  exit 1
+fi
+
+echo "Ok. Burn test passed."
+echo
+cleanup
+exit 0

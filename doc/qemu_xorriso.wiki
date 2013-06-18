@@ -1,0 +1,503 @@
+
+This text describes how to set up a qemu virtual machine so that xorriso
+on its guest GNU/Linux can operate a CD, DVD or BD recorder of the host
+system.
+
+The options follow proposals of Paolo Bonzini on qemu-devel mailing list.
+My compliments for his patient guidance.
+
+Basic knowledge about Debian and qemu was learned from
+[http://www.gnu.org/s/hurd/hurd/running/qemu.html GNU Hurd qemu page].
+
+----------------------------------------------------------------------
+This start command works with with qemu-1.0-rc3:
+
+{{{
+  $ qemu \
+    -enable-kvm \
+    -nographic \
+    -m 512 \
+    -net nic,model=ne2k_pci \
+    -net user,hostfwd=tcp::5557-:22 \
+    -hda /dvdbuffer/i386-install.qemu \
+    -drive file=/dev/sr2,if=none,id=scsicd,format=raw \
+    -device virtio-blk-pci,drive=scsicd,logical_block_size=2048,physical_block_size=2048 \
+    -cdrom .../some_image.iso
+}}}
+
+With this setup of -drive and -device it is necessary to have a
+medium in the drive, when qemu gets started. Else it will refuse.
+
+The guest system is accessible via ssh and scp at port 5557 of the
+host system.
+
+'''/dev/sr2''' is the address of the DVD drive which is handed over to the
+guest system.
+
+'''.../some_image.iso''' may be any readable file which shall serve as
+virtual DVD-ROM. qemu is not happy without such a thing.
+
+'''/dvdbuffer/i386-install.qemu''' is the disk image, where the guest operating
+system was installed by:
+{{{
+  $ qemu-img create /dvdbuffer/i386-install.qemu 8G
+  $ qemu \
+    -enable-kvm \
+    -m 512 \
+    -net nic,model=ne2k_pci \
+    -hda /dvdbuffer/i386-install.qemu \
+    -cdrom debian-6.0.3-i386-netinst.iso \
+    -boot d
+}}}
+
+Host system of my test is Debian GNU/Linux 6.0.2 amd64,
+which had access to the Internet when the guest was installed.
+
+----------------------------------------------------------------------
+
+Preparations on guest system Debian GNU/Linux 6.0.3 i386
+
+There appears no /dev/sr for the passthrough drive. Thus libburn will not
+list it by its drive search function. One may use it nevertheless. But
+xorriso will only do so if prefix "mmc:" is used with the address:
+{{{
+  -dev mmc:/dev/vda
+}}}
+The drive will be listed by libburn if there is a symbolic link /dev/sr*
+pointing to it. On Debian 6, this link persists only if it is created
+by an udev rule.
+
+In /lib/udev/rules.d/50-udev-default.rules:
+{{{
+    KERNEL=="vda", SYMLINK+="sr1"
+}}}
+
+libburn on Linux needs rw-permission for the drive's device node.
+The virtual device /dev/vda is in group "disk". Usual for CD drives is
+group "cdrom", to which i (or the Debian installer ?) have added my
+normal user when i installed the guest system.
+Like with the symbolic link, such a change persists on Debian 6 only as
+udev rule.
+
+In /lib/udev/rules.d/91-permissions.rules:
+{{{
+    KERNEL=="vda", GROUP="cdrom"
+}}}
+
+This should yield
+{{{
+  lrwxrwxrwx 1 root root       3 Nov  8 11:19 /dev/sr1 -> vda
+  brw-rw---- 1 root cdrom 254, 0 Nov  8 11:19 /dev/vda
+}}}
+
+xorriso version must be >= 1.1.8
+{{{
+  $ xorriso -version
+}}}
+tells the versions of its components on stdout:
+{{{
+  ...
+  xorriso version   :  1.1.8
+  ...
+}}}
+
+If your distro's xorriso is too old, consider to get and build GNU xorriso.
+{{{
+  http://ftpmirror.gnu.org/xorriso/xorriso-1.1.8.tar.gz
+}}}
+Do
+{{{
+  $ tar xzf xorriso-1.1.8.tar.gz
+  $ cd xorriso-1.1.8
+  $ ./configure && make
+}}}
+Either do as superuser
+{{{
+  # make install
+}}}
+or execute it where it was built as
+{{{
+  $ ./xorriso/xorriso ...arguments...
+}}}
+After compilation, this binary does not depend on files in the build
+directory. You may move it to any other location.
+
+For details about the following xorriso commands, read
+{{{
+  man xorriso
+  man ./xorriso/xorriso.1
+}}}
+or with the same content
+{{{
+  info xorriso
+  info ./xorriso/xorriso.info
+}}}
+Or read the [http://scdbackup.sourceforge.net/man_1_xorriso_devel.html online man page of xorriso].
+
+
+Note that the sequence of xorriso arguments matters. They are commands
+which get performed one after the other.
+This differs from the behavior of mkisofs, cdrecord, et.al.,
+which parse all arguments and then perform actions in a hardcoded
+sequence.
+
+Writing happens automatically if ISO filetree changes are pending
+at the end of the program run. This is like with other burn tools.
+(There is a command -commit for intermediate writing e.g. in dialog
+mode.)
+
+----------------------------------------------------------------------
+
+Listing accessible drives:
+{{{
+  $ xorriso -devices
+}}}
+shows on stdout:
+{{{
+  0  -dev '/dev/sr0' rwrw-- :  'QEMU    ' 'QEMU DVD-ROM' 
+  1  -dev '/dev/sr1' rwrw-- :  'Optiarc ' 'BD RW BD-5300S' 
+}}}
+
+----------------------------------------------------------------------
+
+The burn tests are presented here for unformatted DVD-RW media.
+The xorriso commands apply also to other types of optical media.
+See "Other applicable media types:" further below.
+
+----------------------------------------------------------------------
+
+Inspecting drive and medium:
+{{{
+  $ xorriso -outdev /dev/sr1 -toc
+}}}
+should show on stdout something like
+{{{
+  Drive current: -dev '/dev/sr1'
+  Drive type   : vendor 'Optiarc' product 'BD RW BD-5300S' revision '1.04'
+  Media current: DVD-RW sequential recording
+  Media product: RITEKW04 , Ritek Corp
+  Media status : is written , is closed
+  Media blocks : 306592 readable , 0 writable , 2298496 overall
+  TOC layout   : Idx ,  sbsector ,       Size , Volume Id
+  ISO session  :   1 ,         0 ,    106696s , ISOIMAGE
+  ISO session  :   2 ,    135536 ,    108385s , ISOIMAGE
+  ISO session  :   3 ,    250240 ,     56202s , ISOIMAGE
+  Media summary: 3 sessions, 271744 data blocks,  531m data,     0 free
+}}}
+
+----------------------------------------------------------------------
+
+Blanking to single session capability:
+
+This medium has to be blanked before further writing. For the DAO
+test, one can save time by fast blanking, which xorriso normally
+dislikes because the result is not capable of multi-session:
+{{{
+   $ xorriso -outdev /dev/sr1 -blank deformat_quickest
+}}}
+should report on stderr
+{{{
+   ...
+   xorriso : UPDATE : Blanking  ( 1.0% done in 2 seconds )
+   ...
+   xorriso : UPDATE : Blanking  ( 95.4% done in 36 seconds )
+   xorriso : UPDATE : Blanking  ( 99.0% done in 37 seconds )
+   ...
+   Media current: DVD-RW sequential recording
+   Media status : is blank
+   Media summary: 0 sessions, 0 data blocks, 0 data, 4489m free
+}}}
+Do not worry if the pacifier messages show no neat percentage progress.
+Some drives report "1.0%" until they are done. Some report "1.0%"
+after "99%".
+
+----------------------------------------------------------------------
+
+Writing a DAO session:
+
+Use one or more moderately sized directories as input. Here: /usr/bin.
+Terminate the list of -add arguments by argument "--".
+It is important to have command -close "on" among the arguments.
+{{{
+  $ xorriso -md5 on -outdev /dev/sr1 -close on -add /usr/bin --
+}}}
+should report on stderr
+{{{
+  ...
+  xorriso : UPDATE : 594 files added in 1 seconds
+  ...
+  xorriso : UPDATE : Thank you for being patient. Working since 2 seconds.
+  xorriso : UPDATE : Writing:       32s    0.1%   fifo 100%  buf   0%  0.1xD
+  ...
+  xorriso : UPDATE : Writing:     2704s    5.1%   fifo  11%  buf   0%  3.9xD
+  ...
+  xorriso : UPDATE : Writing:    20208s   38.2%   fifo  52%  buf  99%  4.0xD
+  ...
+  xorriso : UPDATE : Writing:    52885s  100.0%   fifo   0%  buf  99%  0.0xD
+  ISO image produced: 52735 sectors
+  Written to media  : 52885 sectors at LBA 0
+  Writing to '/dev/sr1' completed successfully.
+}}}
+Do not worry if there is no progress to see for a few dozen seconds
+at the beginning.
+The run will last at least as long as writing of 1 GB would need.
+If you write less data, then there will be a lot of zero progress
+messages at the end of writing.
+
+----------------------------------------------------------------------
+
+Checkreading the result:
+{{{
+  $ xorriso -md5 on -indev /dev/sr1 -check_md5_r sorry / --
+}}}
+The word "sorry" sets the severity class of the event message, which is
+emitted in case of MD5 mismatch. (See man xorriso, "Exception processing".)
+
+This should report on stderr
+{{{
+  ...
+  Drive current: -indev '/dev/sr1'
+  Media current: DVD-RW sequential recording
+  Media status : is written , is closed
+  Media summary: 1 session, 52885 data blocks,  103m data,     0 free
+  Volume id    : 'ISOIMAGE'
+  xorriso : UPDATE : 568079 content bytes read in 5 seconds
+  xorriso : UPDATE :  17074k content bytes read in 10 seconds
+  ...
+  xorriso : UPDATE :  103.7m content bytes read in 35 seconds
+  File contents and their MD5 checksums match.
+}}}
+and the exit value should be 0, if no mismatch was reported.
+
+A mismatch message would look like
+{{{
+  ...
+  MD5 MISMATCH: '/usr/bin/ncursesw5-config'
+  ...
+  Mismatch detected between file contents and MD5 checksums.
+  xorriso : SORRY : Event triggered by MD5 comparison mismatch
+  xorriso : NOTE : Tolerated problem event of severity 'SORRY'
+  xorriso : NOTE : -return_with SORRY 32 triggered by problem severity SORRY
+}}}
+and the exit value would be non-zero.
+
+----------------------------------------------------------------------
+
+Blanking to multi-session capability:
+{{{
+  $ xorriso -outdev /dev/sr1 -blank as_needed
+}}}
+This will need as long as writing the DVD-RW up to its end.
+Blanking option "as_needed" lets xorriso decide what to do in order
+to make the medium writable from scratch. With DVD-RW it will decide for
+-blank "all".
+
+The report on stderr should end by
+{{{
+  ...
+  xorriso : UPDATE : Blanking  ( 98.9% done in 902 seconds )
+  xorriso : UPDATE : Blanking  ( 99.0% done in 903 seconds )
+  xorriso : UPDATE : Blanking  ( 99.0% done in 904 seconds )
+  Blanking done
+  xorriso : NOTE : Re-assessing -outdev '/dev/sr1'
+  Drive current: -outdev '/dev/sr1'
+  Media current: DVD-RW sequential recording
+  Media status : is blank
+  Media summary: 0 sessions, 0 data blocks, 0 data, 4489m free
+}}}
+
+----------------------------------------------------------------------
+ 
+Writing multiple sessions (DVD-RW write type Incremental):
+
+This time do not perform command  -close "on", so that the medium
+stays writable:
+{{{
+  $ xorriso -md5 on -dev /dev/sr1 -add /usr/lib --
+  ...
+  xorriso : UPDATE : Writing:   105280s   98.6%   fifo   0%  buf  77%  3.5xD
+  xorriso : UPDATE : Writing:   106796s  100.0%   fifo   0%  buf  62%  2.2xD
+  xorriso : UPDATE : Closing track/session. Working since 44 seconds
+  ...
+  xorriso : UPDATE : Closing track/session. Working since 77 seconds
+  ISO image produced: 106646 sectors
+  Written to media  : 106800 sectors at LBA 0
+  Writing to '/dev/sr1' completed successfully.
+}}}
+Checkread like after the DAO test:
+{{{
+  $ xorriso -md5 on -indev /dev/sr1 -check_md5_r sorry / --
+  ...
+  xorriso : UPDATE :  204.0m content bytes read in 63 seconds
+  File contents and their MD5 checksums match.
+}}}
+Writing the second session looks like the first one. Just use another
+set of input files to get a visible change in the ISO 9660 file tree:
+{{{
+  $ xorriso -md5 on -dev /dev/sr1 -add /usr/bin --
+  ...
+  Written to media  : 53408 sectors at LBA 135488
+  Writing to '/dev/sr1' completed successfully.
+}}}
+And checkread the whole tree of files (i.e. both sessions):
+{{{
+  $ xorriso -md5 on -indev /dev/sr1 -check_md5_r sorry / --
+  ...
+  xorriso : UPDATE :  307.8m content bytes read in 89 seconds
+  File contents and their MD5 checksums match.
+}}}
+At the end of writing a final session, the medium can be closed.
+It will not take more writing unless it gets blanked or formatted.
+So use command -close "on" to demand closing after writing.
+{{{
+  $ xorriso -md5 on -dev /dev/sr1 -close on -add /usr/sbin --
+  ...
+  Written to media  : 16160 sectors at LBA 195056
+  Writing to '/dev/sr1' completed successfully.
+}}}
+Checkread
+{{{
+  $ xorriso -md5 on -indev /dev/sr1 -check_md5_r sorry / --
+  ...
+  Media current: DVD-RW sequential recording
+  Media status : is written , is closed
+  Media summary: 3 sessions, 176368 data blocks,  344m data, 4064m free
+  ...
+  xorriso : UPDATE :  337.7m content bytes read in 97 seconds
+  File contents and their MD5 checksums match.
+}}}
+
+-----------------------------------------------------------------------------
+
+If the drive tray can move by itself, you may now eject the medium:
+{{{
+  $ xorriso -outdev /dev/sr1 -eject all
+}}}
+
+-----------------------------------------------------------------------------
+
+Other applicable media types:
+
+These test runs for sequential DVD-RW may be performed on CD-RW with the
+same xorriso arguments. Be aware that /usr/lib will hardly fit on a CD.
+So choose smaller directories for CD.
+
+-blank "deformat_quickest" addresses a peculiarity of DVD-RW.
+It will work on other media like -blank "fast".
+
+Except the blanking runs, the tests may also be performed on BD-R, DVD-R,
+DVD+R, and CD-R. But you would waste two media by this.
+
+The first session on CD will always be written with write type SAO,
+further sessions will be written with TAO.
+
+CD-R and DVD-R have a simulation mode. It can be enabled by xorriso
+command -dummy "on", but of course it will not produce readable results.
+So this simulation is usable only for first sessions on blank media.
+
+-----------------------------------------------------------------------------
+
+Now for formatted overwritable media:
+
+All blank, write and check runs of above tests "Writing multiple sessions"
+may also be performed with DVD+RW, DVD-RAM, formatted DVD-RW, and BD-RE.
+There is no way to close formatted media. The command -close "on"
+gets silently ignored.
+
+The write methods and states of formatted media differ from those of
+sequential media. But xorriso presents to the user a unified
+multi-session usage model, under the assumption that all emulated
+sessions contain ISO 9660 filesystem images, which successively
+build on each other.
+
+So from the view of xorriso commands, the only task which makes
+them differ from sequential media, is to apply optional formatting
+or re-formatting.
+A special case are BD-R, which xorriso may format but will not bring
+into (pseudo-) overwritable state. Formatted BD-R perform Defect
+Management by default, which checkreads during writing and replaces
+bad block.
+
+The mandatory formatting of unused DVD+RW and BD-RE is done by xorriso
+automatically. Just start a normal write run. DVD-RAM are sold formatted.
+
+xorriso treats overwritable media with a valid ISO 9660 filesystem as
+appendable media. To make then writable from scratch, apply
+-blank "as_needed", which will actually write a few bytes into the PVD
+(superblock) of the ISO filesystem to invalidate it.
+
+De-formatting is only possible with DVD-RW. E.g. by -blank "deformat".
+
+-----------------------------------------------------------------------------
+
+Format DVD-RW for overwriting without intermediate blanking,
+or format BD-R for Defect Management:
+{{{
+  $ xorriso -outdev /dev/sr1 -format as_needed 
+}}}
+should report on stderr
+{{{
+  ...
+  xorriso : UPDATE : Formatting  ( 99.0% done in 912 seconds )
+  Formatting done
+  xorriso : NOTE : Re-assessing -outdev '/dev/sr1'
+  Drive current: -outdev '/dev/sr1'
+  Media current: DVD-RW restricted overwrite
+  Media status : is blank
+  Media summary: 0 sessions, 0 data blocks, 0 data, 4488m free
+}}}
+As with blanking, one should not worry if the progress messages show
+unplausible percentages. Some drives are more equal than others.
+
+Formatting is said to be much stress to the medium. -format option
+"as_needed" applies it only to yet unformatted media.
+
+When performing above write tests, take care to use -blank "as_needed"
+rather than -blank "deformat_quickest". Else you will get a sequential
+unformatted DVD-RW rather than a formatted DVD-RW which xorriso is
+willing to write from scratch.
+There is no use in a separate "DAO" test on overwritable media anyway.
+
+-----------------------------------------------------------------------------
+
+Change the formatted size of a BD-RE:
+
+First learn about formatted size and proposals of other sizes.
+(One can issue own wishes, too. See in man xorriso, command -format.)
+{{{
+  $ xorriso -outdev /dev/sr1 -list_formats
+}}}
+should tell on stdout
+{{{
+  ...
+  Format status: formatted, with 23610.0 MiB
+  BD Spare Area: 0 blocks consumed, 131072 blocks available
+  Format idx 0 : 00h , 11826176s , 23098.0 MiB
+  Format idx 1 : 01h , 11564032s , 22586.0 MiB
+  Format idx 2 : 30h , 11826176s , 23098.0 MiB
+  Format idx 3 : 30h , 11564032s , 22586.0 MiB
+  Format idx 4 : 30h , 12088320s , 23610.0 MiB
+  Format idx 5 : 31h , 12219392s , 23866.0 MiB
+}}}
+So lets go back from 23610.0 MiB to the default size of 23098.0 MiB
+{{{
+  $ xorriso -outdev /dev/sr1 -format by_index_2 -blank as_needed
+  ...
+  Media summary: 2 sessions, 105470 data blocks,  206m data, 22.4g free
+}}}
+Although the heads of the old sessions might remain readable after
+-format, better do not rely on this and a append -blank "as_needed" to
+avoid any data corruption.
+If you want to keep the data, then make at least a checkread run.
+
+Check whether the size has changed:
+{{{
+  $ xorriso -outdev /dev/sr1 -list_formats
+}}}
+should tell on stdout
+{{{
+  ...
+  Format status: formatted, with 23098.0 MiB
+  BD Spare Area: 0 blocks consumed, 393216 blocks available
+  ...
+}}}

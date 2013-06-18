@@ -1,0 +1,27 @@
+------------------------------------------------------------------------------
+                         http:libburnia-project.org
+------------------------------------------------------------------------------
+
+                         Release Engineering Check List
+
+ TEST: releng 
+       auto_* tests could be run altogether by ./run_all_auto
+       manual_* tests are to be run individually and manually
+ LOGS: http://people.debian.org/~danchev/libburnia/logs/releng/
+
+ TEST: cppcheck - static code checker
+ LOGS: http://people.debian.org/~danchev/libburnia/logs/cppcheck/
+
+ TEST: medistimator - checks the dialog mode of xorriso, size estimation
+       facility, and its ability of processing large trees. Running this
+       requires some specific knowledge of how the tool works, in order to
+       interpret the results and compare them with these from any previous
+       runs. The source is heavily commented.
+ FILE: http://anonscm.debian.org/gitweb/?p=users/danchev/medistimator.git;a=summary
+ LOGS: http://people.debian.org/~danchev/libburnia/logs/medistimator/
+
+ TEST: Debian ISO image builder logs
+ LOGS: http://cdbuilder.debian.org/cdimage-log/
+
+ TEST: Debian build daemon logs - several hardware architectures and kernels
+ LOGS: http://buildd.debian.org
